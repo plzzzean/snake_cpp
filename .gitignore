@@ -1,0 +1,5 @@
+build/
+snake
+snake_tests
+*.o
+.DS_Store

@@ -1,0 +1,36 @@
+#ifndef TYPES_HPP
+#define TYPES_HPP
+
+// 맵 파일과 렌더러가 공유하는 칸 종류입니다.
+// 숫자 값은 maps/stage1.txt의 셀 값과 직접 대응합니다.
+enum class CellType {
+    Empty = 0,
+    Wall = 1,
+    ImmuneWall = 2,
+    SnakeHead = 3,
+    SnakeBody = 4,
+    GrowthItem = 5,
+    PoisonItem = 6,
+    Gate = 7
+};
+
+// Snake가 현재 이동 중인 방향입니다.
+enum class Direction {
+    Up,
+    Down,
+    Left,
+    Right
+};
+
+// 맵 위의 좌표입니다. row는 세로 위치, col은 가로 위치를 의미합니다.
+struct Position {
+    int row;
+    int col;
+
+    // 테스트와 충돌 판정에서 좌표를 간단히 비교하기 위한 연산자입니다.
+    bool operator==(const Position& other) const {
+        return row == other.row && col == other.col;
+    }
+};
+
+#endif

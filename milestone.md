@@ -1,0 +1,126 @@
+# Snake Game 마일스톤 정리
+
+이 문서는 현재 프로젝트에서 구현된 1단계, 2단계 기능과 이후 마일스톤에서 구현해야 할 항목을 정리한 개발 가이드입니다.
+
+## 현재 전체 상태
+
+- 1단계 Map 표시와 2단계 Snake 이동이 구현되어 있습니다.
+- `maps/stage1.txt`부터 `maps/stage10.txt`까지 총 10개 스테이지 맵이 준비되어 있습니다.
+- 현재 기본 실행 설정은 `GameConfig.stageLevel = 10`이며, `mapPath`가 비어 있으면 `maps/stage10.txt`를 로드합니다.
+- 빌드 산출물은 `build/` 디렉터리와 루트 실행 파일 `snake`로 생성되며, `.gitignore`로 제외됩니다.
+- 아직 Item, Gate, Score Board, Mission Board, Stage 클리어/전환 로직은 구현되지 않았습니다.
+
+## 1단계: Map 표시
+
+### 구현 완료
+
+- `maps/stage1.txt`부터 `maps/stage10.txt`까지 스테이지별 숫자 맵을 읽어옵니다.
+- 맵 파일은 공백으로 구분된 숫자 값으로 구성됩니다.
+- `Map` 클래스가 맵 데이터를 `CellType` 2차원 배열로 관리합니다.
+- 맵 크기가 최소 21x21인지 검사합니다.
+- 모든 행의 길이가 같은 직사각형 맵인지 검사합니다.
+- 잘못된 숫자 값이 들어오면 맵 로드 실패로 처리합니다.
+- 맵 파일을 읽지 못하면 `loadFallbackMap()`으로 현재 스테이지 구간에 맞는 기본 맵을 생성합니다.
+- 파일 로드 검증이 성공한 뒤에만 `Map`의 내부 grid를 교체합니다.
+- Wall과 Immune Wall을 구분합니다.
+- 화면 출력은 `Renderer` 클래스가 담당합니다.
+- `ncurses`를 사용해 터미널 화면에 맵을 그립니다.
+- 각 칸은 가로 2칸씩 사용해 터미널에서 더 보기 좋게 표시합니다.
+
+### 관련 파일
+
+- `src/Types.hpp`: `CellType`, `Direction`, `Position` 정의
+- `src/Map.hpp`, `src/Map.cpp`: 맵 로드, 검증, 셀 조회
+- `src/Renderer.hpp`, `src/Renderer.cpp`: 맵과 게임 상태 출력
+- `maps/stage1.txt` ~ `maps/stage10.txt`: 스테이지별 맵 데이터
+- `.gitignore`: 빌드 산출물 제외 설정
+
+### 현재 셀 값
+
+- `0`: 빈 칸
+- `1`: Wall
+- `2`: Immune Wall
+- `3`: Snake Head
+- `4`: Snake Body
+- `5`: Growth Item
+- `6`: Poison Item
+- `7`: Gate
+
+현재 Snake Head와 Snake Body는 맵 파일 값이 아니라 실제 `Snake` 객체의 위치를 기준으로 화면에 덮어 그립니다.
+
+### 스테이지별 맵 크기
+
+- 1단계 ~ 2단계: 27x27
+- 3단계 ~ 4단계: 25x25
+- 5단계 ~ 7단계: 23x23
+- 8단계 ~ 10단계: 21x21
+
+모든 맵은 최소 21x21 이상이며, 내부 벽 구조가 서로 다르게 구성되어 있습니다.
+맵 크기는 `Game::currentMapSize()`의 fallback 크기와 테스트의 `expectedMapSize()` 기준과 맞춰져 있습니다.
+
+## 2단계: Snake 이동
+
+### 구현 완료
+
+- `Snake` 클래스가 Snake의 몸 좌표와 현재 이동 방향을 관리합니다.
+- Snake는 시작 위치 기준 길이 3으로 생성됩니다.
+- 기본 시작 위치는 현재 맵의 중앙입니다.
+- 기본 이동 방향은 오른쪽입니다.
+- 방향키 입력으로 Snake의 이동 방향을 변경합니다.
+- 같은 방향 입력은 그대로 허용합니다.
+- 현재 방향의 정반대 입력은 실패로 처리합니다.
+- 고정 Tick마다 Snake가 한 칸씩 이동합니다.
+- 현재 설정 기준 기본 Tick은 500ms입니다.
+- Stage Level에 따라 Tick을 줄일 수 있는 구조가 준비되어 있습니다. (level당 tick 45ms 감소)
+- 최소 Tick은 180ms로 제한됩니다.
+- 기본 `stageLevel`은 10이므로 기본 실행 Tick은 최소값 180ms까지 줄어든 상태입니다.
+- 다음 위치가 Wall 또는 Immune Wall이면 게임 오버가 됩니다.
+- 다음 위치가 자기 몸통이면 게임 오버가 됩니다.
+- Snake가 이동할 때 머리를 새 위치에 추가하고 꼬리를 제거해 현재 길이를 유지합니다.
+- 게임 오버 후에는 이동을 멈추고 `q` 입력으로 종료할 수 있습니다.
+
+### 관련 파일
+
+- `src/Snake.hpp`, `src/Snake.cpp`: 방향 전환, 이동, 몸통 충돌 판정
+- `src/Game.hpp`, `src/Game.cpp`: 게임 루프, 입력 처리, Tick 제어, 게임 오버 처리
+- `src/main.cpp`: 게임 실행 진입점
+- `tests/test_logic.cpp`: 맵 로드와 Snake 이동 규칙 테스트
+- `build/`: `make`와 `make test` 실행 시 생성되는 object/test 산출물 디렉터리
+
+### 현재 조작법
+
+- 방향키: 이동 방향 변경
+- `q`: 게임 종료
+
+## 현재 테스트 범위
+
+`tests/test_logic.cpp`에서 다음 동작을 확인합니다.
+
+- `maps/stage1.txt`부터 `maps/stage10.txt`까지 정상 로드되는지 확인
+- 각 스테이지 맵이 설계된 크기와 일치하는지 확인
+- 주요 Wall, Immune Wall, Empty 값이 올바른지 확인
+- 정반대 방향 입력이 거부되는지 확인
+- Snake가 정상적으로 한 칸 전진하는지 확인
+- Snake가 벽과 충돌했을 때 `HitWall`을 반환하는지 확인
+- `make test` 실행 시 테스트 바이너리는 `build/snake_tests`로 생성되는지 확인
+
+테스트 실행 명령은 다음과 같습니다.
+
+```bash
+make test
+```
+
+## 빌드/정리 상태
+
+- `make`: `build/*.o`를 만든 뒤 루트에 `snake` 실행 파일을 생성합니다.
+- `make run`: `snake`를 빌드한 뒤 실행합니다.
+- `make test`: `build/snake_tests`를 빌드하고 테스트를 실행합니다.
+- `make clean`: `build/`, `snake`, 과거 호환용 `snake_tests`를 삭제합니다.
+- 제출 시 `build/`, `snake`, `*.o`는 포함하지 않습니다.
+
+## 이후 구현 필요 항목
+
+- 3단계: Growth Item / Poison Item 생성, 수명, 획득 효과, 길이 변화 구현
+- 4단계: Gate 쌍 생성, 진입/진출 방향 규칙, Wall/Gate 상호작용 구현
+- 5단계: Score Board, Mission Board, Stage 클리어와 다음 Stage 전환 구현
+- 현재 준비된 10개 Stage 맵에 맞춰 Stage별 Mission 값과 난이도 값을 연결해야 합니다.
