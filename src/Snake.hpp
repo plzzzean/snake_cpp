@@ -9,8 +9,11 @@
 // 한 번 이동했을 때 발생할 수 있는 결과입니다.
 enum class MoveResult {
     Moved,
+    AteGrowth,
+    AtePoison,
     HitWall,
-    HitSelf
+    HitSelf,
+    TooShort
 };
 
 // Snake의 몸 좌표와 이동 방향을 관리합니다.
@@ -25,7 +28,7 @@ public:
     bool setDirection(Direction next);
 
     // 현재 방향으로 한 칸 전진하고 벽/몸통 충돌 여부를 반환합니다.
-    MoveResult move(const Map& map);
+    MoveResult move(Map& map);
 
     // 렌더러가 특정 좌표에 Snake가 있는지 확인할 때 사용합니다.
     bool occupies(Position position) const;

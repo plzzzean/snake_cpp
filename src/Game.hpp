@@ -1,7 +1,10 @@
 #ifndef GAME_HPP
 #define GAME_HPP
 
+#include <chrono>
+#include <random>
 #include <string>
+#include <vector>
 
 #include "Map.hpp"
 #include "Renderer.hpp"
@@ -43,9 +46,16 @@ private:
     // 현재 맵 중앙에서 오른쪽 방향으로 출발하는 Snake를 만듭니다.
     Snake createInitialSnake() const;
 
+    void refreshExpiredItems(const Snake& snake);
+    void spawnItem(CellType item, const Snake& snake);
+    std::vector<Position> occupiedPositions(const Snake& snake) const;
+
     GameConfig config_;
     Map map_;
     Renderer renderer_;
+    std::mt19937 rng_;
+    std::chrono::steady_clock::time_point growthItemCreatedAt_;
+    std::chrono::steady_clock::time_point poisonItemCreatedAt_;
     bool gameOver_ = false;
     bool shouldQuit_ = false;
     std::string status_ = "Running";

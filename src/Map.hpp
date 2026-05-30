@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <random>
 
 #include "Types.hpp"
 
@@ -18,7 +19,12 @@ public:
     // 범위를 벗어난 좌표는 벽으로 취급해 충돌 판정을 안전하게 만듭니다.
     CellType at(int row, int col) const;
     bool isBlocked(int row, int col) const;
+    bool isEmpty(int row, int col) const;
     bool contains(int row, int col) const;
+
+    bool setCell(int row, int col, CellType cell);
+    void clearCells(CellType cell);
+    bool placeRandomItem(CellType item, const std::vector<Position>& occupied, std::mt19937& rng);
 
     // 현재 로드된 맵의 크기와 오류 메시지를 외부에 알려줍니다.
     int rows() const;

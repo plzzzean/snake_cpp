@@ -27,8 +27,9 @@ bool Snake::setDirection(Direction next) {
     return true;
 }
 
-MoveResult Snake::move(const Map& map) {
+MoveResult Snake::move(Map& map) {
     const Position next = nextPosition(head(), direction_);
+    const CellType nextCell = map.at(next.row, next.col);
 
     if (map.isBlocked(next.row, next.col)) {
         return MoveResult::HitWall;
@@ -43,7 +44,22 @@ MoveResult Snake::move(const Map& map) {
     }
 
     body_.push_front(next);
+
+    if (nextCell == CellType::GrowthItem) {
+        map.setCell(next.row, next.col, CellType::Empty);
+        return MoveResult::AteGrowth;
+    }
+
     body_.pop_back();
+    if (nextCell == CellType::PoisonItem) {
+        map.setCell(next.row, next.col, CellType::Empty);
+        body_.pop_back();
+        if (body_.size() < 3) {
+            return MoveResult::TooShort;
+        }
+        return MoveResult::AtePoison;
+    }
+
     return MoveResult::Moved;
 }
 

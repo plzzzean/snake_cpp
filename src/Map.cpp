@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <random>
 #include <sstream>
 
 namespace {
@@ -84,8 +85,55 @@ bool Map::isBlocked(int row, int col) const {
     return cell == CellType::Wall || cell == CellType::ImmuneWall;
 }
 
+bool Map::isEmpty(int row, int col) const {
+    return at(row, col) == CellType::Empty;
+}
+
 bool Map::contains(int row, int col) const {
     return row >= 0 && row < rows() && col >= 0 && col < cols();
+}
+
+bool Map::setCell(int row, int col, CellType cell) {
+    if (!contains(row, col)) {
+        return false;
+    }
+    grid_[row][col] = cell;
+    return true;
+}
+
+void Map::clearCells(CellType cell) {
+    for (auto& row : grid_) {
+        for (CellType& current : row) {
+            if (current == cell) {
+                current = CellType::Empty;
+            }
+        }
+    }
+}
+
+bool Map::placeRandomItem(CellType item, const std::vector<Position>& occupied, std::mt19937& rng) {
+    if (item != CellType::GrowthItem && item != CellType::PoisonItem) {
+        return false;
+    }
+
+    std::vector<Position> candidates;
+    for (int row = 0; row < rows(); ++row) {
+        for (int col = 0; col < cols(); ++col) {
+            const Position position{row, col};
+            const bool snakeOccupies = std::find(occupied.begin(), occupied.end(), position) != occupied.end();
+            if (isEmpty(row, col) && !snakeOccupies) {
+                candidates.push_back(position);
+            }
+        }
+    }
+
+    if (candidates.empty()) {
+        return false;
+    }
+
+    std::uniform_int_distribution<std::size_t> dist(0, candidates.size() - 1);
+    const Position selected = candidates[dist(rng)];
+    return setCell(selected.row, selected.col, item);
 }
 
 int Map::rows() const {

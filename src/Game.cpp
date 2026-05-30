@@ -1,6 +1,8 @@
 #include "Game.hpp"
 
 #include <algorithm>
+#include <chrono>
+#include <random>
 #include <string>
 #include <thread>
 #include <utility>
@@ -8,12 +10,15 @@
 #include <ncurses.h>
 
 Game::Game(GameConfig config)
-    : config_(std::move(config)) {
+    : config_(std::move(config)),
+      rng_(std::random_device{}()) {
 }
 
 void Game::run() {
     loadMap();
     Snake snake = createInitialSnake();
+    spawnItem(CellType::GrowthItem, snake);
+    spawnItem(CellType::PoisonItem, snake);
 
     renderer_.init();
     auto lastTick = std::chrono::steady_clock::now();
@@ -35,8 +40,21 @@ void Game::run() {
             } else if (result == MoveResult::HitSelf) {
                 gameOver_ = true;
                 status_ = "Hit body";
+            } else if (result == MoveResult::TooShort) {
+                gameOver_ = true;
+                status_ = "Snake too short";
+            } else if (result == MoveResult::AteGrowth) {
+                status_ = "Ate growth item";
+                spawnItem(CellType::GrowthItem, snake);
+            } else if (result == MoveResult::AtePoison) {
+                status_ = "Ate poison item";
+                spawnItem(CellType::PoisonItem, snake);
             }
             lastTick = now;
+        }
+
+        if (!gameOver_) {
+            refreshExpiredItems(snake);
         }
 
         renderer_.draw(map_, snake, gameOver_, status_);
@@ -126,4 +144,32 @@ int Game::currentMapSize() const {
 
 Snake Game::createInitialSnake() const {
     return Snake({map_.rows() / 2, map_.cols() / 2}, Direction::Right);
+}
+
+void Game::refreshExpiredItems(const Snake& snake) {
+    constexpr auto ItemLifetime = std::chrono::seconds(5);
+    const auto now = std::chrono::steady_clock::now();
+
+    if (now - growthItemCreatedAt_ >= ItemLifetime) {
+        spawnItem(CellType::GrowthItem, snake);
+    }
+    if (now - poisonItemCreatedAt_ >= ItemLifetime) {
+        spawnItem(CellType::PoisonItem, snake);
+    }
+}
+
+void Game::spawnItem(CellType item, const Snake& snake) {
+    map_.clearCells(item);
+    map_.placeRandomItem(item, occupiedPositions(snake), rng_);
+
+    const auto now = std::chrono::steady_clock::now();
+    if (item == CellType::GrowthItem) {
+        growthItemCreatedAt_ = now;
+    } else if (item == CellType::PoisonItem) {
+        poisonItemCreatedAt_ = now;
+    }
+}
+
+std::vector<Position> Game::occupiedPositions(const Snake& snake) const {
+    return std::vector<Position>(snake.body().begin(), snake.body().end());
 }
