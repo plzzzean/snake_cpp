@@ -1,3 +1,6 @@
+// Snake.cpp
+// Snake 클래스의 방향 전환, 전진 이동, 벽/몸통 충돌 판정 로직을 구현한다.
+
 #include "Snake.hpp"
 
 #include <algorithm>
@@ -5,6 +8,7 @@
 
 Snake::Snake(Position head, Direction direction)
     : direction_(direction) {
+    // 시작 시 머리를 먼저 넣고, 진행 방향 기준 왼쪽에 몸통 2칸을 붙여 길이 3을 만든다.
     body_.push_back(head);
     body_.push_back({head.row, head.col - 1});
     body_.push_back({head.row, head.col - 2});
@@ -15,10 +19,12 @@ Direction Snake::direction() const {
 }
 
 bool Snake::setDirection(Direction next) {
+    // 같은 방향 입력은 상태 변화가 없지만 정상 입력으로 처리한다.
     if (next == direction_) {
         return true;
     }
 
+    // 반대 방향으로 즉시 꺾으면 몸통과 충돌하는 입력이므로 거부한다.
     if (isOpposite(direction_, next)) {
         return false;
     }
@@ -28,12 +34,15 @@ bool Snake::setDirection(Direction next) {
 }
 
 MoveResult Snake::move(const Map& map) {
+    // 현재 머리와 방향을 기준으로 다음 Tick에서 도착할 좌표를 먼저 계산한다.
     const Position next = nextPosition(head(), direction_);
 
+    // 맵의 벽 또는 범위 밖 좌표에 닿으면 이동하지 않고 벽 충돌을 반환한다.
     if (map.isBlocked(next.row, next.col)) {
         return MoveResult::HitWall;
     }
 
+    // 꼬리는 이번 이동에서 빠질 칸이므로 자기 충돌 검사 대상에서 제외한다.
     const bool hitsBody = std::any_of(body_.begin(), std::prev(body_.end()), [next](Position part) {
         return part == next;
     });
@@ -42,6 +51,7 @@ MoveResult Snake::move(const Map& map) {
         return MoveResult::HitSelf;
     }
 
+    // 새 머리를 앞에 추가하고 꼬리를 제거해 전체 길이를 유지한 채 한 칸 전진한다.
     body_.push_front(next);
     body_.pop_back();
     return MoveResult::Moved;
@@ -60,6 +70,7 @@ Position Snake::head() const {
 }
 
 Position Snake::nextPosition(Position current, Direction direction) {
+    // 좌표계는 row가 세로, col이 가로이므로 위/아래는 row를, 좌/우는 col을 바꾼다.
     switch (direction) {
     case Direction::Up:
         return {current.row - 1, current.col};
@@ -74,6 +85,7 @@ Position Snake::nextPosition(Position current, Direction direction) {
 }
 
 bool Snake::isOpposite(Direction current, Direction next) {
+    // 현재 방향과 입력 방향이 같은 축에서 서로 반대인지 확인한다.
     return (current == Direction::Up && next == Direction::Down)
         || (current == Direction::Down && next == Direction::Up)
         || (current == Direction::Left && next == Direction::Right)

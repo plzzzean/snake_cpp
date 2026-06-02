@@ -1,3 +1,6 @@
+// Map.cpp
+// Map 클래스의 파일 파싱, 기본 맵 생성, 범위 검사, 맵 검증 로직을 구현한다.
+
 #include "Map.hpp"
 
 #include <algorithm>
@@ -9,6 +12,7 @@ constexpr int MinPlayableMapSize = 21;
 }
 
 bool Map::loadFromFile(const std::string& path) {
+    // 맵 파일은 공백으로 구분된 숫자를 한 줄씩 읽어 CellType 그리드로 변환한다.
     std::ifstream input(path);
     if (!input) {
         errorMessage_ = "Cannot open map file: " + path;
@@ -21,6 +25,7 @@ bool Map::loadFromFile(const std::string& path) {
 
     while (std::getline(input, line)) {
         ++lineNumber;
+        // 빈 줄은 맵 데이터로 보지 않고 건너뛴다.
         if (line.empty()) {
             continue;
         }
@@ -30,6 +35,7 @@ bool Map::loadFromFile(const std::string& path) {
         int value = 0;
 
         while (stream >> value) {
+            // 정의되지 않은 숫자가 들어오면 잘못된 맵으로 보고 즉시 실패한다.
             if (!isKnownCellValue(value)) {
                 errorMessage_ = "Unknown map value at line " + std::to_string(lineNumber);
                 return false;
@@ -44,6 +50,7 @@ bool Map::loadFromFile(const std::string& path) {
         nextGrid.push_back(row);
     }
 
+    // 파일 파싱이 끝난 뒤 크기와 직사각형 여부를 검증한 다음 실제 grid_를 교체한다.
     if (!validateGrid(nextGrid)) {
         return false;
     }
@@ -54,9 +61,11 @@ bool Map::loadFromFile(const std::string& path) {
 }
 
 void Map::loadFallbackMap(int size) {
+    // 요청 크기가 너무 작아도 최소 플레이 가능 크기 이상으로 보정한다.
     const int mapSize = std::max(MinPlayableMapSize, size);
     grid_.assign(mapSize, std::vector<CellType>(mapSize, CellType::Empty));
 
+    // 가장자리는 일반 벽으로 채워 Snake가 맵 밖으로 나가지 못하게 한다.
     for (int r = 0; r < mapSize; ++r) {
         for (int c = 0; c < mapSize; ++c) {
             if (r == 0 || r == mapSize - 1 || c == 0 || c == mapSize - 1) {
@@ -65,6 +74,7 @@ void Map::loadFallbackMap(int size) {
         }
     }
 
+    // 모서리는 과제 맵 형식에 맞춰 ImmuneWall로 표시한다.
     grid_[0][0] = CellType::ImmuneWall;
     grid_[0][mapSize - 1] = CellType::ImmuneWall;
     grid_[mapSize - 1][0] = CellType::ImmuneWall;
@@ -73,6 +83,7 @@ void Map::loadFallbackMap(int size) {
 }
 
 CellType Map::at(int row, int col) const {
+    // 범위 밖 좌표를 벽으로 처리하면 호출자가 매번 범위 검사를 하지 않아도 안전하다.
     if (!contains(row, col)) {
         return CellType::Wall;
     }
@@ -104,6 +115,7 @@ const std::string& Map::errorMessage() const {
 }
 
 bool Map::validateGrid(const std::vector<std::vector<CellType>>& grid) {
+    // Snake가 시작하고 이동할 수 있는 최소 크기보다 작으면 유효하지 않은 맵이다.
     if (grid.empty() || static_cast<int>(grid.size()) < MinPlayableMapSize) {
         errorMessage_ = "Map must be at least 21x21";
         return false;
@@ -115,6 +127,7 @@ bool Map::validateGrid(const std::vector<std::vector<CellType>>& grid) {
         return false;
     }
 
+    // 모든 행의 길이가 같아야 row/col 인덱싱을 단순하고 안전하게 유지할 수 있다.
     for (const auto& row : grid) {
         if (static_cast<int>(row.size()) != expectedCols) {
             errorMessage_ = "Map must be rectangular";
