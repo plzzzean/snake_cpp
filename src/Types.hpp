@@ -1,8 +1,11 @@
+// Types.hpp
+// 맵 셀 종류, 이동 방향, 좌표처럼 여러 클래스가 공유하는 공통 타입을 정의한다.
+
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
-// 맵 파일과 렌더러가 공유하는 칸 종류입니다.
-// 숫자 값은 maps/stage1.txt의 셀 값과 직접 대응합니다.
+// 맵 파일과 렌더러가 공유하는 칸 종류다.
+// 숫자 값은 maps/stage1.txt의 셀 값과 직접 대응한다.
 enum class CellType {
     Empty = 0,
     Wall = 1,
@@ -14,7 +17,7 @@ enum class CellType {
     Gate = 7
 };
 
-// Snake가 현재 이동 중인 방향입니다.
+// Snake가 현재 이동 중인 방향이다.
 enum class Direction {
     Up,
     Down,
@@ -22,12 +25,12 @@ enum class Direction {
     Right
 };
 
-// 맵 위의 좌표입니다. row는 세로 위치, col은 가로 위치를 의미합니다.
+// 맵 위의 좌표다. row는 세로 위치, col은 가로 위치를 의미한다.
 struct Position {
     int row;
     int col;
 
-    // 테스트와 충돌 판정에서 좌표를 간단히 비교하기 위한 연산자입니다.
+    // 테스트와 충돌 판정에서 좌표를 간단히 비교하기 위한 연산자다.
     bool operator==(const Position& other) const {
         return row == other.row && col == other.col;
     }

@@ -1,3 +1,6 @@
+# Makefile
+# snake_cpp2 프로젝트의 실행 파일과 로직 테스트 빌드 규칙을 정의한다.
+
 CXX := g++
 
 CXXFLAGS := -std=c++17 -Wall -Wextra -pedantic -Isrc

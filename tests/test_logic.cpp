@@ -1,3 +1,6 @@
+// test_logic.cpp
+// Map 로드와 Snake 이동 규칙을 assert로 확인하는 간단한 로직 테스트다.
+
 #include <cassert>
 #include <random>
 #include <string>
@@ -40,7 +43,7 @@ int countCells(const Map& map, CellType target) {
 }
 
 void testMapLoadsStageFile() {
-    // stage1 맵이 27x27로 로드되고 주요 셀 값이 맞는지 확인합니다.
+    // stage1 맵이 27x27로 로드되고 주요 셀 값이 맞는지 확인한다.
     Map map;
     assert(map.loadFromFile("maps/stage1.txt"));
     assert(map.rows() == 27);
@@ -81,14 +84,14 @@ void testAllStageMapsAreValid() {
 }
 
 void testSnakeRejectsReverseDirection() {
-    // 오른쪽으로 이동 중인 Snake는 왼쪽으로 즉시 방향 전환할 수 없습니다.
+    // 오른쪽으로 이동 중인 Snake는 왼쪽으로 즉시 방향 전환할 수 없다.
     Snake snake({10, 10}, Direction::Right);
     assert(!snake.setDirection(Direction::Left));
     assert(snake.direction() == Direction::Right);
 }
 
 void testSnakeMovesForward() {
-    // 열린 공간에서는 현재 방향으로 한 칸 이동해야 합니다.
+    // 열린 공간에서는 현재 방향으로 한 칸 이동해야 한다.
     Map map;
     map.loadFallbackMap();
 
@@ -98,7 +101,7 @@ void testSnakeMovesForward() {
 }
 
 void testSnakeHitsWall() {
-    // 벽에 도달하면 MoveResult::HitWall을 반환해야 합니다.
+    // 벽에 도달하면 MoveResult::HitWall을 반환해야 한다.
     Map map;
     map.loadFallbackMap();
 
@@ -178,7 +181,7 @@ void testItemSpawnsOnlyOnEmptyCell() {
 }
 
 int main() {
-    // 간단한 assert 기반 테스트를 순서대로 실행합니다.
+    // 간단한 assert 기반 테스트를 순서대로 실행한다.
     testMapLoadsStageFile();
     testAllStageMapsAreValid();
     testSnakeRejectsReverseDirection();
