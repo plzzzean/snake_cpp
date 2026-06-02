@@ -77,6 +77,7 @@ private:
     int gateUseCount_ = 0;
     bool gameOver_ = false;
     bool shouldQuit_ = false;
+    bool shouldRestart_ = false;
     std::string status_ = "Running";
 };
 

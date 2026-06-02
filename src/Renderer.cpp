@@ -76,9 +76,8 @@ void Renderer::draw(const Map& map, const Snake& snake, bool gameOver, const std
     mvprintw(6, infoCol, "Status: %s", status.c_str());
 
     if (gameOver) {
-        // 게임 오버 뒤에는 이동을 멈추고 종료 안내만 보여준다.
         mvprintw(8, infoCol, "GAME OVER");
-        mvprintw(9, infoCol, "Press q to exit");
+        mvprintw(9, infoCol, "r: 재시작  q: 종료");
     }
 
     refresh();
