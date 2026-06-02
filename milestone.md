@@ -77,7 +77,7 @@
 - 다음 위치가 Wall 또는 Immune Wall이면 게임 오버가 됩니다.
 - 다음 위치가 자기 몸통이면 게임 오버가 됩니다.
 - Snake가 이동할 때 머리를 새 위치에 추가하고 꼬리를 제거해 현재 길이를 유지합니다.
-- 게임 오버 후에는 이동을 멈추고 `q` 입력으로 종료할 수 있습니다.
+- 게임 오버 후에는 이동을 멈추고 `r` 입력으로 재시작하거나 `q` 입력으로 종료할 수 있습니다.
 
 ### 관련 파일
 
@@ -90,6 +90,7 @@
 ### 현재 조작법
 
 - 방향키: 이동 방향 변경
+- `r`: 게임 오버 후 재시작
 - `q`: 게임 종료
 
 ## 3단계: Item
@@ -149,8 +150,36 @@ make test
 - `make clean`: `build/`, `snake`, 과거 호환용 `snake_tests`를 삭제합니다.
 - 제출 시 `build/`, `snake`, `*.o`는 포함하지 않습니다.
 
+## 4단계: Gate 구현
+
+### 구현 완료
+
+- `Gate` 클래스가 Gate 쌍의 생성, 진출 방향 계산, 활성 상태 추적을 담당합니다.
+- ImmuneWall을 제외한 일반 Wall 셀 중 Snake가 점유하지 않은 임의의 두 위치에 Gate 쌍을 생성합니다.
+- Gate는 한 번에 한 쌍만 활성 상태를 유지합니다.
+- 게임 시작 후 10초가 지나면 Gate 쌍이 출현합니다.
+- Snake 머리가 Gate 위치에 도달하면 반대편 Gate 출구로 순간이동합니다.
+- Gate 통과 후 Gate는 제거되며, 이후 10초가 지나면 새 Gate 쌍이 다시 출현합니다.
+- Snake가 Gate에 진입 중일 때는 Gate가 사라지지 않으며, 새 Gate도 생성되지 않습니다.
+- 출구 Gate가 가장자리 Wall에 있으면 항상 맵 안쪽 방향으로 진출합니다.
+  - 상단 벽 → 아래 방향
+  - 하단 벽 → 위 방향
+  - 좌측 벽 → 오른쪽 방향
+  - 우측 벽 → 왼쪽 방향
+- 출구 Gate가 내부 Wall에 있으면 진입 방향 → 시계방향 → 역시계방향 → 반대 방향 순으로 진출 가능한 방향을 결정합니다.
+- Gate 출구 후보 방향이 모두 막혀 있으면 반대 방향으로 진출합니다.
+- Gate 출구에서 자기 몸통과 충돌하면 Game Over로 처리합니다.
+- Gate 사용 횟수를 `gateUseCount_`로 추적합니다.
+- Item 배치 후보에서 Gate 위치를 제외합니다.
+
+### 관련 파일
+
+- `src/Gate.hpp`, `src/Gate.cpp`: Gate 생성, 출구 방향 계산, 활성 상태 관리
+- `src/Game.hpp`, `src/Game.cpp`: Gate 생성 대기, 진입 감지, 순간이동, 통과 후 제거
+- `src/Snake.hpp`, `src/Snake.cpp`: `teleportHead()` — Gate 통과 시 머리 위치와 방향 갱신
+- `src/Renderer.hpp`, `src/Renderer.cpp`: Gate 셀을 `G`(파란색)로 표시
+
 ## 이후 구현 필요 항목
 
-- 4단계: Gate 쌍 생성, 진입/진출 방향 규칙, Wall/Gate 상호작용 구현
 - 5단계: Score Board, Mission Board, Stage 클리어와 다음 Stage 전환 구현
 - 현재 준비된 10개 Stage 맵에 맞춰 Stage별 Mission 값과 난이도 값을 연결해야 합니다.

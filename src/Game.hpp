@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Food.hpp"
+#include "Gate.hpp"
 #include "Map.hpp"
 #include "Poison.hpp"
 #include "Renderer.hpp"
@@ -57,16 +58,26 @@ private:
     // 5초가 지난 아이템을 과제 규칙에 맞게 새 위치로 재생성한다.
     void refreshExpiredItems(const Snake& snake);
 
+    // Gate 생성 대기, Snake 진입 감지, 순간이동, 사용 후 제거를 처리한다.
+    void handleGate(Snake& snake);
+
     std::vector<Position> occupiedPositions(const Snake& snake) const;
+
+    // Gate는 게임 시작 후 일정 시간이 지나면 출현하고, 통과 후 다시 대기한다.
+    static constexpr int GateSpawnDelaySeconds = 10;
 
     GameConfig config_;
     Map map_;
     Food food_;
+    Gate gate_;
     Poison poison_;
     Renderer renderer_;
     std::mt19937 rng_;
+    std::chrono::steady_clock::time_point gateLastClearedAt_;
+    int gateUseCount_ = 0;
     bool gameOver_ = false;
     bool shouldQuit_ = false;
+    bool shouldRestart_ = false;
     std::string status_ = "Running";
 };
 

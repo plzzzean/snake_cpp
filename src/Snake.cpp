@@ -85,6 +85,12 @@ Position Snake::head() const {
     return body_.front();
 }
 
+void Snake::teleportHead(Position newHead, Direction newDir) {
+    // 머리 좌표와 이동 방향을 Gate 출구 기준으로 교체한다.
+    body_.front() = newHead;
+    direction_ = newDir;
+}
+
 Position Snake::nextPosition(Position current, Direction direction) {
     // 좌표계는 row가 세로, col이 가로이므로 위/아래는 row를, 좌/우는 col을 바꾼다.
     switch (direction) {

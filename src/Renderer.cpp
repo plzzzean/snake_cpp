@@ -12,6 +12,7 @@ constexpr short ColorSnakeHead = 3;
 constexpr short ColorSnakeBody = 4;
 constexpr short ColorGrowthItem = 5;
 constexpr short ColorPoisonItem = 6;
+constexpr short ColorGate = 7;
 }
 
 void Renderer::init() {
@@ -32,6 +33,7 @@ void Renderer::init() {
         init_pair(ColorSnakeBody, COLOR_YELLOW, COLOR_BLACK);
         init_pair(ColorGrowthItem, COLOR_MAGENTA, COLOR_BLACK);
         init_pair(ColorPoisonItem, COLOR_RED, COLOR_BLACK);
+        init_pair(ColorGate, COLOR_BLUE, COLOR_BLACK);
     }
 }
 
@@ -74,9 +76,8 @@ void Renderer::draw(const Map& map, const Snake& snake, bool gameOver, const std
     mvprintw(6, infoCol, "Status: %s", status.c_str());
 
     if (gameOver) {
-        // 게임 오버 뒤에는 이동을 멈추고 종료 안내만 보여준다.
         mvprintw(8, infoCol, "GAME OVER");
-        mvprintw(9, infoCol, "Press q to exit");
+        mvprintw(9, infoCol, "r: restart  q: quit");
     }
 
     refresh();
@@ -120,6 +121,8 @@ short Renderer::colorFor(CellType cell) {
         return ColorGrowthItem;
     case CellType::PoisonItem:
         return ColorPoisonItem;
+    case CellType::Gate:
+        return ColorGate;
     default:
         return 0;
     }
