@@ -94,6 +94,7 @@ make test
 - Poison Item `-` 획득 후 Snake 길이가 감소하는 장면을 보여준다.
 - Poison Item으로 길이가 3보다 작아질 때 Game Over가 되는 장면을 보여준다.
 - 반대 방향 입력 또는 벽 충돌로 Game Over가 되는 장면을 보여준다.
+- Game Over 후 `r`을 눌러 재시작하는 장면을 보여준다.
 - 게임 시작 후 10초가 지나 Gate 쌍이 출현하는 장면을 보여준다.
 - Snake가 Gate에 진입해 반대편 Gate 출구로 순간이동하는 장면을 보여준다.
 - 가장자리 벽 Gate에서 안쪽 방향으로 진출하는 장면을 보여준다.
