@@ -187,6 +187,20 @@ Gate가 Map 가운데 Wall에 있을 때는 다음 우선순위로 진출 방향
 - Snake와 Gate의 상호작용을 처리한다.
 - Wall에 대한 추가 동작 아이디어를 제안하고 구현한다.
 
+#### 현재 구현 완료 내용
+
+- `src/Gate.hpp`, `src/Gate.cpp`를 추가해 Gate 쌍의 생성, 진출 방향 계산, 활성 상태 추적을 분리했다.
+- ImmuneWall을 제외한 일반 Wall 셀 중 Snake가 점유하지 않은 임의의 두 위치에 Gate 쌍을 생성한다.
+- Gate는 한 번에 한 쌍만 활성 상태를 유지한다.
+- 게임 시작 후 10초가 지나면 Gate 쌍이 출현하고, 통과 후 10초 후에 새 Gate 쌍이 다시 출현한다.
+- Snake 머리가 Gate 위치에 도달하면 `Snake::teleportHead()`로 반대편 Gate 출구로 순간이동시킨다.
+- 출구 Gate가 가장자리 Wall에 있으면 항상 맵 안쪽 방향(상→아래, 하→위, 좌→오른쪽, 우→왼쪽)으로 진출한다.
+- 출구 Gate가 내부 Wall에 있으면 진입 방향 → 시계방향 → 역시계방향 → 반대 방향 순으로 진출 가능한 방향을 결정한다.
+- Gate 통과 후 자기 몸통과 충돌하면 Game Over로 처리한다.
+- Gate 사용 횟수를 `Game::gateUseCount_`로 추적한다.
+- `Renderer`는 Gate 셀을 `G` 기호와 파란색으로 표시한다.
+- Item 배치 후보에서 Gate 위치를 제외한다.
+
 ### 5단계: Score Board / Mission / Stage
 
 - 4단계 프로그램에서 우측에 게임 점수를 표시하는 화면을 구성한다.
