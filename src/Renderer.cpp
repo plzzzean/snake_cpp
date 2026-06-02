@@ -77,7 +77,7 @@ void Renderer::draw(const Map& map, const Snake& snake, bool gameOver, const std
 
     if (gameOver) {
         mvprintw(8, infoCol, "GAME OVER");
-        mvprintw(9, infoCol, "r: 재시작  q: 종료");
+        mvprintw(9, infoCol, "r: restart  q: quit");
     }
 
     refresh();
