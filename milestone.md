@@ -1,14 +1,14 @@
 # Snake Game 마일스톤 정리
 
-이 문서는 현재 프로젝트에서 구현된 1단계, 2단계 기능과 이후 마일스톤에서 구현해야 할 항목을 정리한 개발 가이드입니다.
+이 문서는 현재 프로젝트에서 구현된 1단계, 2단계, 3단계 기능과 이후 마일스톤에서 구현해야 할 항목을 정리한 개발 가이드입니다.
 
 ## 현재 전체 상태
 
-- 1단계 Map 표시와 2단계 Snake 이동이 구현되어 있습니다.
+- 1단계 Map 표시, 2단계 Snake 이동, 3단계 Item 기능이 구현되어 있습니다.
 - `maps/stage1.txt`부터 `maps/stage10.txt`까지 총 10개 스테이지 맵이 준비되어 있습니다.
 - 현재 기본 실행 설정은 `GameConfig.stageLevel = 10`이며, `mapPath`가 비어 있으면 `maps/stage10.txt`를 로드합니다.
 - 빌드 산출물은 `build/` 디렉터리와 루트 실행 파일 `snake`로 생성되며, `.gitignore`로 제외됩니다.
-- 아직 Item, Gate, Score Board, Mission Board, Stage 클리어/전환 로직은 구현되지 않았습니다.
+- 아직 Gate, Score Board, Mission Board, Stage 클리어/전환 로직은 구현되지 않았습니다.
 
 ## 1단계: Map 표시
 
@@ -92,6 +92,31 @@
 - 방향키: 이동 방향 변경
 - `q`: 게임 종료
 
+## 3단계: Item
+
+### 구현 완료
+
+- `Food` 클래스가 Growth Item의 생성과 5초 재생성을 관리합니다.
+- `Poison` 클래스가 Poison Item의 생성과 5초 재생성을 관리합니다.
+- Growth Item은 화면에 `+`로 표시됩니다.
+- Poison Item은 화면에 `-`로 표시됩니다.
+- Growth Item을 획득하면 Snake 길이가 1 증가합니다.
+- Poison Item을 획득하면 Snake 길이가 1 감소합니다.
+- Poison Item 획득 후 Snake 길이가 3보다 작아지면 Game Over가 됩니다.
+- 전체 Item 수는 최대 3개입니다.
+- 현재 생성 정책은 Growth Item 2개 + Poison Item 1개입니다.
+- Item은 Wall, Immune Wall, Snake 몸통, Gate 위치와 겹치지 않는 빈 칸에 생성됩니다.
+- Item은 5초마다 기존 위치에서 사라지고 다른 빈 위치에 재생성됩니다.
+
+### 관련 파일
+
+- `src/Food.hpp`, `src/Food.cpp`: Growth Item 생성 개수와 재생성 주기 관리
+- `src/Poison.hpp`, `src/Poison.cpp`: Poison Item 생성 개수와 재생성 주기 관리
+- `src/Game.hpp`, `src/Game.cpp`: Item 초기 배치, 획득 후 재생성, 5초 재생성 호출
+- `src/Map.hpp`, `src/Map.cpp`: Item을 배치할 수 있는 빈 칸 확인과 랜덤 배치
+- `src/Snake.hpp`, `src/Snake.cpp`: Growth/Poison 획득 효과와 길이 3 미만 실패 결과 처리
+- `src/Renderer.hpp`, `src/Renderer.cpp`: Growth Item `+`, Poison Item `-` 출력
+
 ## 현재 테스트 범위
 
 `tests/test_logic.cpp`에서 다음 동작을 확인합니다.
@@ -102,6 +127,12 @@
 - 정반대 방향 입력이 거부되는지 확인
 - Snake가 정상적으로 한 칸 전진하는지 확인
 - Snake가 벽과 충돌했을 때 `HitWall`을 반환하는지 확인
+- Growth Item 획득 시 Snake 길이가 1 증가하는지 확인
+- Poison Item 획득 시 Snake 길이가 1 감소하는지 확인
+- Poison Item 획득 후 길이가 3보다 작아지면 `TooShort` 결과가 반환되는지 확인
+- Item이 Snake 몸통 위치와 Gate 위치에 생성되지 않는지 확인
+- Growth Item 2개 + Poison Item 1개로 전체 Item 수가 3개인지 확인
+- Item 재생성 정책 호출 후 개수 정책이 유지되는지 확인
 - `make test` 실행 시 테스트 바이너리는 `build/snake_tests`로 생성되는지 확인
 
 테스트 실행 명령은 다음과 같습니다.
@@ -120,7 +151,6 @@ make test
 
 ## 이후 구현 필요 항목
 
-- 3단계: Growth Item / Poison Item 생성, 수명, 획득 효과, 길이 변화 구현
 - 4단계: Gate 쌍 생성, 진입/진출 방향 규칙, Wall/Gate 상호작용 구현
 - 5단계: Score Board, Mission Board, Stage 클리어와 다음 Stage 전환 구현
 - 현재 준비된 10개 Stage 맵에 맞춰 Stage별 Mission 값과 난이도 값을 연결해야 합니다.

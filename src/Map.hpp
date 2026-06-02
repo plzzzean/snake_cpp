@@ -34,6 +34,9 @@ public:
     // Snake가 차지하지 않는 빈 칸 중 하나에 아이템을 무작위로 배치한다.
     bool placeRandomItem(CellType item, const std::vector<Position>& occupied, std::mt19937& rng);
 
+    // 테스트와 아이템 정책 확인을 위해 특정 셀 종류의 개수를 센다.
+    int countCells(CellType cell) const;
+
     // 현재 로드된 맵의 크기와 오류 메시지를 외부에 알려준다.
     int rows() const;
     int cols() const;

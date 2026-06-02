@@ -6,7 +6,9 @@
 #include <string>
 #include <vector>
 
+#include "Food.hpp"
 #include "Map.hpp"
+#include "Poison.hpp"
 #include "Snake.hpp"
 
 namespace {
@@ -29,17 +31,6 @@ int expectedMapSize(int stage) {
     return 21;
 }
 
-int countCells(const Map& map, CellType target) {
-    int count = 0;
-    for (int row = 0; row < map.rows(); ++row) {
-        for (int col = 0; col < map.cols(); ++col) {
-            if (map.at(row, col) == target) {
-                ++count;
-            }
-        }
-    }
-    return count;
-}
 }
 
 void testMapLoadsStageFile() {
@@ -117,6 +108,7 @@ void testGrowthItemIncreasesLength() {
 
     Snake snake({10, 10}, Direction::Right);
     assert(snake.body().size() == 3);
+    // Growth Item을 밟으면 꼬리를 제거하지 않아 Snake 길이가 1 증가한다.
     assert(snake.move(map) == MoveResult::AteGrowth);
     assert(snake.body().size() == 4);
     assert(map.at(10, 11) == CellType::Empty);
@@ -132,6 +124,7 @@ void testPoisonItemDecreasesLength() {
     assert(snake.body().size() == 4);
 
     map.setCell(10, 12, CellType::PoisonItem);
+    // Poison Item을 밟으면 일반 이동보다 꼬리를 한 칸 더 제거해 길이가 1 감소한다.
     assert(snake.move(map) == MoveResult::AtePoison);
     assert(snake.body().size() == 3);
     assert(map.at(10, 12) == CellType::Empty);
@@ -144,6 +137,7 @@ void testPoisonItemTooShortGameOverResult() {
 
     Snake snake({10, 10}, Direction::Right);
     assert(snake.body().size() == 3);
+    // Poison Item 이후 길이가 3보다 작아지면 Game에서 Game Over로 해석할 결과를 반환한다.
     assert(snake.move(map) == MoveResult::TooShort);
     assert(snake.body().size() == 2);
 }
@@ -157,8 +151,8 @@ void testItemSpawnsOnlyOnEmptyCell() {
 
     assert(map.placeRandomItem(CellType::GrowthItem, occupied, rng));
     assert(map.placeRandomItem(CellType::PoisonItem, occupied, rng));
-    assert(countCells(map, CellType::GrowthItem) == 1);
-    assert(countCells(map, CellType::PoisonItem) == 1);
+    assert(map.countCells(CellType::GrowthItem) == 1);
+    assert(map.countCells(CellType::PoisonItem) == 1);
 
     for (const Position& position : occupied) {
         assert(map.at(position.row, position.col) != CellType::GrowthItem);
@@ -180,6 +174,62 @@ void testItemSpawnsOnlyOnEmptyCell() {
     }
 }
 
+void testFoodAndPoisonKeepTotalItemLimit() {
+    Map map;
+    map.loadFallbackMap();
+    Snake snake({10, 10}, Direction::Right);
+    std::vector<Position> occupied(snake.body().begin(), snake.body().end());
+    std::mt19937 rng(2);
+    Food food;
+    Poison poison;
+
+    food.spawn(map, occupied, rng);
+    poison.spawn(map, occupied, rng);
+
+    assert(map.countCells(CellType::GrowthItem) == Food::MaxCount);
+    assert(map.countCells(CellType::PoisonItem) == Poison::MaxCount);
+    assert(map.countCells(CellType::GrowthItem) + map.countCells(CellType::PoisonItem) == 3);
+}
+
+void testItemManagersDoNotSpawnOnSnakeOrGate() {
+    Map map;
+    map.loadFallbackMap();
+    map.setCell(5, 5, CellType::Gate);
+
+    Snake snake({10, 10}, Direction::Right);
+    std::vector<Position> occupied(snake.body().begin(), snake.body().end());
+    std::mt19937 rng(3);
+    Food food;
+    Poison poison;
+
+    food.spawn(map, occupied, rng);
+    poison.spawn(map, occupied, rng);
+
+    for (const Position& position : occupied) {
+        assert(map.at(position.row, position.col) != CellType::GrowthItem);
+        assert(map.at(position.row, position.col) != CellType::PoisonItem);
+    }
+    assert(map.at(5, 5) == CellType::Gate);
+}
+
+void testItemManagersRefreshPolicyKeepsCountsBeforeExpiry() {
+    Map map;
+    map.loadFallbackMap();
+    Snake snake({10, 10}, Direction::Right);
+    std::vector<Position> occupied(snake.body().begin(), snake.body().end());
+    std::mt19937 rng(4);
+    Food food;
+    Poison poison;
+
+    food.spawn(map, occupied, rng);
+    poison.spawn(map, occupied, rng);
+    food.refreshIfExpired(map, occupied, rng);
+    poison.refreshIfExpired(map, occupied, rng);
+
+    assert(map.countCells(CellType::GrowthItem) == Food::MaxCount);
+    assert(map.countCells(CellType::PoisonItem) == Poison::MaxCount);
+}
+
 int main() {
     // 간단한 assert 기반 테스트를 순서대로 실행한다.
     testMapLoadsStageFile();
@@ -191,5 +241,8 @@ int main() {
     testPoisonItemDecreasesLength();
     testPoisonItemTooShortGameOverResult();
     testItemSpawnsOnlyOnEmptyCell();
+    testFoodAndPoisonKeepTotalItemLimit();
+    testItemManagersDoNotSpawnOnSnakeOrGate();
+    testItemManagersRefreshPolicyKeepsCountsBeforeExpiry();
     return 0;
 }
