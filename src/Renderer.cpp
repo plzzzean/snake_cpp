@@ -10,6 +10,8 @@ constexpr short ColorWall = 1;
 constexpr short ColorImmuneWall = 2;
 constexpr short ColorSnakeHead = 3;
 constexpr short ColorSnakeBody = 4;
+constexpr short ColorGrowthItem = 5;
+constexpr short ColorPoisonItem = 6;
 }
 
 void Renderer::init() {
@@ -28,6 +30,8 @@ void Renderer::init() {
         init_pair(ColorImmuneWall, COLOR_CYAN, COLOR_BLACK);
         init_pair(ColorSnakeHead, COLOR_GREEN, COLOR_BLACK);
         init_pair(ColorSnakeBody, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(ColorGrowthItem, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(ColorPoisonItem, COLOR_RED, COLOR_BLACK);
     }
 }
 
@@ -112,6 +116,10 @@ short Renderer::colorFor(CellType cell) {
         return ColorSnakeHead;
     case CellType::SnakeBody:
         return ColorSnakeBody;
+    case CellType::GrowthItem:
+        return ColorGrowthItem;
+    case CellType::PoisonItem:
+        return ColorPoisonItem;
     default:
         return 0;
     }

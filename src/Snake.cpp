@@ -33,9 +33,10 @@ bool Snake::setDirection(Direction next) {
     return true;
 }
 
-MoveResult Snake::move(const Map& map) {
+MoveResult Snake::move(Map& map) {
     // 현재 머리와 방향을 기준으로 다음 Tick에서 도착할 좌표를 먼저 계산한다.
     const Position next = nextPosition(head(), direction_);
+    const CellType nextCell = map.at(next.row, next.col);
 
     // 맵의 벽 또는 범위 밖 좌표에 닿으면 이동하지 않고 벽 충돌을 반환한다.
     if (map.isBlocked(next.row, next.col)) {
@@ -51,9 +52,24 @@ MoveResult Snake::move(const Map& map) {
         return MoveResult::HitSelf;
     }
 
-    // 새 머리를 앞에 추가하고 꼬리를 제거해 전체 길이를 유지한 채 한 칸 전진한다.
+    // 새 머리를 앞에 추가하고 아이템 종류에 따라 길이와 맵 상태를 갱신한다.
     body_.push_front(next);
+
+    if (nextCell == CellType::GrowthItem) {
+        map.setCell(next.row, next.col, CellType::Empty);
+        return MoveResult::AteGrowth;
+    }
+
     body_.pop_back();
+    if (nextCell == CellType::PoisonItem) {
+        map.setCell(next.row, next.col, CellType::Empty);
+        body_.pop_back();
+        if (body_.size() < 3) {
+            return MoveResult::TooShort;
+        }
+        return MoveResult::AtePoison;
+    }
+
     return MoveResult::Moved;
 }
 

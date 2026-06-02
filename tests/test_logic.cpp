@@ -2,7 +2,9 @@
 // Map 로드와 Snake 이동 규칙을 assert로 확인하는 간단한 로직 테스트다.
 
 #include <cassert>
+#include <random>
 #include <string>
+#include <vector>
 
 #include "Map.hpp"
 #include "Snake.hpp"
@@ -25,6 +27,18 @@ int expectedMapSize(int stage) {
         return 23;
     }
     return 21;
+}
+
+int countCells(const Map& map, CellType target) {
+    int count = 0;
+    for (int row = 0; row < map.rows(); ++row) {
+        for (int col = 0; col < map.cols(); ++col) {
+            if (map.at(row, col) == target) {
+                ++count;
+            }
+        }
+    }
+    return count;
 }
 }
 
@@ -96,6 +110,76 @@ void testSnakeHitsWall() {
     assert(snake.move(map) == MoveResult::HitWall);
 }
 
+void testGrowthItemIncreasesLength() {
+    Map map;
+    map.loadFallbackMap();
+    map.setCell(10, 11, CellType::GrowthItem);
+
+    Snake snake({10, 10}, Direction::Right);
+    assert(snake.body().size() == 3);
+    assert(snake.move(map) == MoveResult::AteGrowth);
+    assert(snake.body().size() == 4);
+    assert(map.at(10, 11) == CellType::Empty);
+}
+
+void testPoisonItemDecreasesLength() {
+    Map map;
+    map.loadFallbackMap();
+
+    Snake snake({10, 10}, Direction::Right);
+    map.setCell(10, 11, CellType::GrowthItem);
+    assert(snake.move(map) == MoveResult::AteGrowth);
+    assert(snake.body().size() == 4);
+
+    map.setCell(10, 12, CellType::PoisonItem);
+    assert(snake.move(map) == MoveResult::AtePoison);
+    assert(snake.body().size() == 3);
+    assert(map.at(10, 12) == CellType::Empty);
+}
+
+void testPoisonItemTooShortGameOverResult() {
+    Map map;
+    map.loadFallbackMap();
+    map.setCell(10, 11, CellType::PoisonItem);
+
+    Snake snake({10, 10}, Direction::Right);
+    assert(snake.body().size() == 3);
+    assert(snake.move(map) == MoveResult::TooShort);
+    assert(snake.body().size() == 2);
+}
+
+void testItemSpawnsOnlyOnEmptyCell() {
+    Map map;
+    map.loadFallbackMap();
+    Snake snake({10, 10}, Direction::Right);
+    std::vector<Position> occupied(snake.body().begin(), snake.body().end());
+    std::mt19937 rng(1);
+
+    assert(map.placeRandomItem(CellType::GrowthItem, occupied, rng));
+    assert(map.placeRandomItem(CellType::PoisonItem, occupied, rng));
+    assert(countCells(map, CellType::GrowthItem) == 1);
+    assert(countCells(map, CellType::PoisonItem) == 1);
+
+    for (const Position& position : occupied) {
+        assert(map.at(position.row, position.col) != CellType::GrowthItem);
+        assert(map.at(position.row, position.col) != CellType::PoisonItem);
+    }
+
+    for (int row = 0; row < map.rows(); ++row) {
+        assert(map.at(row, 0) != CellType::GrowthItem);
+        assert(map.at(row, 0) != CellType::PoisonItem);
+        assert(map.at(row, map.cols() - 1) != CellType::GrowthItem);
+        assert(map.at(row, map.cols() - 1) != CellType::PoisonItem);
+    }
+
+    for (int col = 0; col < map.cols(); ++col) {
+        assert(map.at(0, col) != CellType::GrowthItem);
+        assert(map.at(0, col) != CellType::PoisonItem);
+        assert(map.at(map.rows() - 1, col) != CellType::GrowthItem);
+        assert(map.at(map.rows() - 1, col) != CellType::PoisonItem);
+    }
+}
+
 int main() {
     // 간단한 assert 기반 테스트를 순서대로 실행한다.
     testMapLoadsStageFile();
@@ -103,5 +187,9 @@ int main() {
     testSnakeRejectsReverseDirection();
     testSnakeMovesForward();
     testSnakeHitsWall();
+    testGrowthItemIncreasesLength();
+    testPoisonItemDecreasesLength();
+    testPoisonItemTooShortGameOverResult();
+    testItemSpawnsOnlyOnEmptyCell();
     return 0;
 }
