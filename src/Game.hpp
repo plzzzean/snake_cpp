@@ -9,7 +9,9 @@
 #include <string>
 #include <vector>
 
+#include "Food.hpp"
 #include "Map.hpp"
+#include "Poison.hpp"
 #include "Renderer.hpp"
 #include "Snake.hpp"
 
@@ -49,16 +51,20 @@ private:
     // 현재 맵 중앙에서 오른쪽 방향으로 출발하는 Snake를 만든다.
     Snake createInitialSnake() const;
 
+    // Food와 Poison 객체에 현재 Snake 위치를 전달해 아이템을 초기 배치한다.
+    void spawnItems(const Snake& snake);
+
+    // 5초가 지난 아이템을 과제 규칙에 맞게 새 위치로 재생성한다.
     void refreshExpiredItems(const Snake& snake);
-    void spawnItem(CellType item, const Snake& snake);
+
     std::vector<Position> occupiedPositions(const Snake& snake) const;
 
     GameConfig config_;
     Map map_;
+    Food food_;
+    Poison poison_;
     Renderer renderer_;
     std::mt19937 rng_;
-    std::chrono::steady_clock::time_point growthItemCreatedAt_;
-    std::chrono::steady_clock::time_point poisonItemCreatedAt_;
     bool gameOver_ = false;
     bool shouldQuit_ = false;
     std::string status_ = "Running";

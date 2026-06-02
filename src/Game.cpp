@@ -12,6 +12,10 @@
 
 #include <ncurses.h>
 
+namespace {
+constexpr std::chrono::milliseconds FrameDelay{16};
+}
+
 Game::Game(GameConfig config)
     : config_(std::move(config)),
       rng_(std::random_device{}()) {
@@ -21,8 +25,7 @@ void Game::run() {
     // 게임 시작 전에 맵과 Snake를 먼저 준비하고 ncurses 화면을 초기화한다.
     loadMap();
     Snake snake = createInitialSnake();
-    spawnItem(CellType::GrowthItem, snake);
-    spawnItem(CellType::PoisonItem, snake);
+    spawnItems(snake);
 
     renderer_.init();
     auto lastTick = std::chrono::steady_clock::now();
@@ -47,14 +50,15 @@ void Game::run() {
                 gameOver_ = true;
                 status_ = "Hit body";
             } else if (result == MoveResult::TooShort) {
+                // Poison Item 획득으로 길이가 3 미만이 되면 과제 규칙상 실패 처리한다.
                 gameOver_ = true;
                 status_ = "Snake too short";
             } else if (result == MoveResult::AteGrowth) {
                 status_ = "Ate growth item";
-                spawnItem(CellType::GrowthItem, snake);
+                food_.spawn(map_, occupiedPositions(snake), rng_);
             } else if (result == MoveResult::AtePoison) {
                 status_ = "Ate poison item";
-                spawnItem(CellType::PoisonItem, snake);
+                poison_.spawn(map_, occupiedPositions(snake), rng_);
             }
             lastTick = now;
         }
@@ -64,7 +68,7 @@ void Game::run() {
             refreshExpiredItems(snake);
         }
         renderer_.draw(map_, snake, gameOver_, status_);
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        std::this_thread::sleep_for(FrameDelay);
     }
 
     renderer_.shutdown();
@@ -161,28 +165,16 @@ Snake Game::createInitialSnake() const {
     return Snake({map_.rows() / 2, map_.cols() / 2}, Direction::Right);
 }
 
-void Game::refreshExpiredItems(const Snake& snake) {
-    constexpr auto ItemLifetime = std::chrono::seconds(5);
-    const auto now = std::chrono::steady_clock::now();
-
-    if (now - growthItemCreatedAt_ >= ItemLifetime) {
-        spawnItem(CellType::GrowthItem, snake);
-    }
-    if (now - poisonItemCreatedAt_ >= ItemLifetime) {
-        spawnItem(CellType::PoisonItem, snake);
-    }
+void Game::spawnItems(const Snake& snake) {
+    const std::vector<Position> occupied = occupiedPositions(snake);
+    food_.spawn(map_, occupied, rng_);
+    poison_.spawn(map_, occupied, rng_);
 }
 
-void Game::spawnItem(CellType item, const Snake& snake) {
-    map_.clearCells(item);
-    map_.placeRandomItem(item, occupiedPositions(snake), rng_);
-
-    const auto now = std::chrono::steady_clock::now();
-    if (item == CellType::GrowthItem) {
-        growthItemCreatedAt_ = now;
-    } else if (item == CellType::PoisonItem) {
-        poisonItemCreatedAt_ = now;
-    }
+void Game::refreshExpiredItems(const Snake& snake) {
+    const std::vector<Position> occupied = occupiedPositions(snake);
+    food_.refreshIfExpired(map_, occupied, rng_);
+    poison_.refreshIfExpired(map_, occupied, rng_);
 }
 
 std::vector<Position> Game::occupiedPositions(const Snake& snake) const {

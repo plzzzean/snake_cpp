@@ -60,14 +60,19 @@ Mission Board에는 각 항목별 목표치와 달성 여부를 표시한다.
 ## Game Rule #2: Growth Item / Poison Item
 
 - Snake가 이동 방향에 놓인 Item을 만나면 해당 Item을 획득한다.
+- Growth Item은 화면에 `+`로 표시한다.
 - Growth Item을 획득하면 Snake의 몸 길이가 1 증가한다.
+- Growth Item은 최대 2개까지 생성한다.
+- Poison Item은 화면에 `-`로 표시한다.
 - Poison Item을 획득하면 Snake의 몸 길이가 1 감소한다.
-- Poison Item으로 몸 길이가 3보다 작아지면 실패 처리한다.
-- Growth Item과 Poison Item은 Snake Body가 없는 임의의 위치에 출현한다.
-- Item은 출현 후 일정 시간, 예: 5초가 지나면 사라지고 다른 위치에 다시 나타나야 한다.
-- 동시에 출현 가능한 Item 수는 3개로 제한한다.
+- Poison Item으로 몸 길이가 3보다 작아지면 Game Over로 처리한다.
+- Poison Item은 최대 1개까지 생성한다.
+- 전체 Item 수는 최대 3개로 제한한다. 현재 구현은 Growth Item 2개 + Poison Item 1개 구조다.
+- Growth Item과 Poison Item은 Snake Body가 없는 임의의 빈 위치에 출현한다.
+- Item은 Wall, Immune Wall, Snake 몸통, Gate 위치와 겹치지 않는다.
+- Item은 출현 후 5초가 지나면 기존 위치에서 사라지고 다른 빈 위치에 다시 나타난다.
 - Map Data에서 Growth Item과 Poison Item은 서로 다른 값으로 구분한다. 예: Growth Item `5`, Poison Item `6`
-- 화면에서는 색상이나 기호로 두 Item을 구분할 수 있어야 한다.
+- 화면에서는 색상과 기호로 두 Item을 구분한다.
 
 ## Game Rule #3: Gate 기본 규칙
 
@@ -156,6 +161,19 @@ Gate가 Map 가운데 Wall에 있을 때는 다음 우선순위로 진출 방향
 - Snake와 Item의 상호작용을 처리한다.
 - 추가 Item 아이디어를 제안하고 구현한다.
 
+#### 현재 구현 완료 내용
+
+- `src/Food.hpp`, `src/Food.cpp`를 추가해 Growth Item의 생성과 5초 재생성 정책을 분리했다.
+- `src/Poison.hpp`, `src/Poison.cpp`를 추가해 Poison Item의 생성과 5초 재생성 정책을 분리했다.
+- `Food`는 Growth Item을 최대 2개까지 유지한다.
+- `Poison`은 Poison Item을 최대 1개까지 유지한다.
+- `Game`은 게임 시작 시 Item을 초기 배치하고, 매 프레임 5초 재생성 조건을 확인한다.
+- `Map`은 `isEmpty()` 기준으로 배치 가능한 빈 칸만 후보로 사용한다.
+- `Map::placeRandomItem()`은 Snake가 차지한 좌표를 제외하고 Item을 배치한다.
+- `Snake::move()`는 Growth Item 획득 시 길이를 1 증가시키고, Poison Item 획득 시 길이를 1 감소시킨다.
+- Poison Item 획득 후 Snake 길이가 3보다 작아지면 `TooShort` 결과를 반환하고, `Game`이 이를 Game Over로 처리한다.
+- `Renderer`는 Growth Item을 `+`, Poison Item을 `-`로 표시한다.
+
 ### 4단계: Gate 구현
 
 - 3단계 프로그램에서 Wall의 임의 위치에 한 쌍의 Gate가 출현하도록 수정한다.
@@ -211,3 +229,4 @@ g++ -o snake snake.cpp rule.cpp -lncurses
 
 - Makefile을 사용하는 경우 Makefile을 제출물에 포함한다.
 - 현재 로컬 프로젝트는 `make`, `make run`, `make clean` 구조를 갖고 있으며 `-lncurses`로 링크한다.
+- Stage3 Item 정리 후 `make clean`, `make`, `make test`가 통과한 상태다.

@@ -132,6 +132,7 @@ bool Map::placeRandomItem(CellType item, const std::vector<Position>& occupied, 
         for (int col = 0; col < cols(); ++col) {
             const Position position{row, col};
             const bool snakeOccupies = std::find(occupied.begin(), occupied.end(), position) != occupied.end();
+            // isEmpty() 조건으로 Wall, Immune Wall, Gate, 다른 Item 칸은 후보에서 제외한다.
             if (isEmpty(row, col) && !snakeOccupies) {
                 candidates.push_back(position);
             }
@@ -145,6 +146,14 @@ bool Map::placeRandomItem(CellType item, const std::vector<Position>& occupied, 
     std::uniform_int_distribution<std::size_t> dist(0, candidates.size() - 1);
     const Position selected = candidates[dist(rng)];
     return setCell(selected.row, selected.col, item);
+}
+
+int Map::countCells(CellType cell) const {
+    int count = 0;
+    for (const auto& row : grid_) {
+        count += static_cast<int>(std::count(row.begin(), row.end(), cell));
+    }
+    return count;
 }
 
 int Map::rows() const {
