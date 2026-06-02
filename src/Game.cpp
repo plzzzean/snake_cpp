@@ -29,6 +29,7 @@ void Game::run() {
 
     renderer_.init();
     auto lastTick = std::chrono::steady_clock::now();
+    gateLastClearedAt_ = lastTick;
 
     while (!shouldQuit_) {
         // nodelay 모드라 입력이 없으면 ERR이 반환되고 게임 루프는 계속 진행된다.
@@ -60,6 +61,7 @@ void Game::run() {
                 status_ = "Ate poison item";
                 poison_.spawn(map_, occupiedPositions(snake), rng_);
             }
+            handleGate(snake);
             lastTick = now;
         }
 
@@ -175,6 +177,44 @@ void Game::refreshExpiredItems(const Snake& snake) {
     const std::vector<Position> occupied = occupiedPositions(snake);
     food_.refreshIfExpired(map_, occupied, rng_);
     poison_.refreshIfExpired(map_, occupied, rng_);
+}
+
+void Game::handleGate(Snake& snake) {
+    if (!gate_.isActive()) {
+        // 일정 시간이 지나면 Gate 쌍을 새로 생성한다.
+        const auto now = std::chrono::steady_clock::now();
+        const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - gateLastClearedAt_);
+        if (elapsed.count() >= GateSpawnDelaySeconds) {
+            gate_.spawn(map_, snake, rng_);
+        }
+        return;
+    }
+
+    if (!gate_.isGatePosition(snake.head())) {
+        return;
+    }
+
+    // Snake 머리가 Gate에 진입했으므로 출구 위치와 방향을 계산한다.
+    const Direction entryDir = snake.direction();
+    const auto [exitPos, exitDir] = gate_.calcExit(snake.head(), entryDir, map_);
+
+    // Gate를 먼저 제거한 뒤 Snake를 출구로 순간이동시킨다.
+    gate_.clear(map_);
+    gateLastClearedAt_ = std::chrono::steady_clock::now();
+
+    snake.teleportHead(exitPos, exitDir);
+    gateUseCount_++;
+    status_ = "Used gate (G:" + std::to_string(gateUseCount_) + ")";
+
+    // 출구에서 자기 몸과 충돌하면 게임 오버로 처리한다.
+    const auto& body = snake.body();
+    const Position exitPosVal = exitPos;
+    const bool selfCollision = std::any_of(body.begin() + 1, body.end(),
+        [exitPosVal](const Position& p) { return p == exitPosVal; });
+    if (selfCollision) {
+        gameOver_ = true;
+        status_ = "Hit body (via gate)";
+    }
 }
 
 std::vector<Position> Game::occupiedPositions(const Snake& snake) const {
