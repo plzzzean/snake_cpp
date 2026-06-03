@@ -82,21 +82,22 @@ void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool 
     mvprintw(11, infoCol, "+: %d", growthCount);
     mvprintw(12, infoCol, "-: %d", poisonCount);
     mvprintw(13, infoCol, "G: %d", gateUseCount);
+    mvprintw(14, infoCol, "Time: %d sec", snake.timeElapsed());
 
     // Mission 출력
-    mvprintw(15, infoCol, "Mission");
-    mvprintw(16, infoCol, "B: %d (%c)", missionLength, (int)snake.body().size() >= missionLength ? 'v' : ' ');
-    mvprintw(17, infoCol, "+: %d (%c)", missionGrowth, growthCount >= missionGrowth ? 'v' : ' ');
-    mvprintw(18, infoCol, "-: %d (%c)", missionPoison, poisonCount >= missionPoison ? 'v' : ' ');
-    mvprintw(19, infoCol, "G: %d (%c)", missionGate, gateUseCount >= missionGate ? 'v' : ' ');
+    mvprintw(16, infoCol, "Mission");
+    mvprintw(17, infoCol, "B: %d (%c)", missionLength, (int)snake.body().size() >= missionLength ? 'v' : ' ');
+    mvprintw(18, infoCol, "+: %d (%c)", missionGrowth, growthCount >= missionGrowth ? 'v' : ' ');
+    mvprintw(19, infoCol, "-: %d (%c)", missionPoison, poisonCount >= missionPoison ? 'v' : ' ');
+    mvprintw(20, infoCol, "G: %d (%c)", missionGate, gateUseCount >= missionGate ? 'v' : ' ');
 
     if (stageCleared) {
-        mvprintw(21, infoCol, "STAGE CLEARED!");
-        mvprintw(22, infoCol, "g: next stage  q: quit");
+        mvprintw(22, infoCol, "STAGE CLEARED!");
+        mvprintw(23, infoCol, "g: next stage  q: quit");
     }
     else if (gameOver) {
-        mvprintw(21, infoCol, "GAME OVER");
-        mvprintw(22, infoCol, "r: restart  q: quit");
+        mvprintw(22, infoCol, "GAME OVER");
+        mvprintw(23, infoCol, "r: restart  q: quit");
     }
 
     refresh();

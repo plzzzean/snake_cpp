@@ -12,6 +12,7 @@ Snake::Snake(Position head, Direction direction)
     body_.push_back(head);
     body_.push_back({head.row, head.col - 1});
     body_.push_back({head.row, head.col - 2});
+    startTime_ = std::chrono::steady_clock::now();
 }
 
 Direction Snake::direction() const {
@@ -115,4 +116,9 @@ bool Snake::isOpposite(Direction current, Direction next) {
         || (current == Direction::Down && next == Direction::Up)
         || (current == Direction::Left && next == Direction::Right)
         || (current == Direction::Right && next == Direction::Left);
+}
+
+int Snake::timeElapsed() const {
+    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::seconds>(now - startTime_).count();
 }

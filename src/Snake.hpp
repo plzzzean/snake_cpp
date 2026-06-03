@@ -44,6 +44,8 @@ public:
 
     const int MAX_LENGTH = 15;
 
+    int timeElapsed() const;
+
 private:
     // 현재 좌표와 방향으로 다음 머리 좌표를 계산한다.
     static Position nextPosition(Position current, Direction direction);
@@ -53,6 +55,7 @@ private:
 
     std::deque<Position> body_;
     Direction direction_;
+    std::chrono::steady_clock::time_point startTime_;
 };
 
 #endif
