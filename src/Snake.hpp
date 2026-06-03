@@ -42,6 +42,8 @@ public:
     // Gate 통과 시 머리 위치와 이동 방향을 출구 기준으로 즉시 교체한다.
     void teleportHead(Position newHead, Direction newDir);
 
+    const int MAX_LENGTH = 15;
+
 private:
     // 현재 좌표와 방향으로 다음 머리 좌표를 계산한다.
     static Position nextPosition(Position current, Direction direction);

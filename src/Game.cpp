@@ -178,7 +178,7 @@ void Game::nextStage() {
 
 void Game::checkMissionCompletion(const Snake& snake) {
     const auto& m = stageMissions_[currentStage_ - 1];
-    if (int(snake.body().size()) >= m.target_length && 
+    if ((int)snake.body().size() >= m.target_length && 
         growthCount_ >= m.target_growth &&
         poisonCount_ >= m.target_poison &&
         gateUseCount_ >= m.target_gate) {

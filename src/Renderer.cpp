@@ -41,7 +41,7 @@ void Renderer::shutdown() {
     endwin();
 }
 
-void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool gameOver, const std::string& status, int stage, int missionLength, int growth, int missionGrowth, int poison, int missionPoison, int gateUseCount, int missionGate) const {
+void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool gameOver, const std::string& status, int stage, int missionLength, int growthCount, int missionGrowth, int poisonCount, int missionPoison, int gateUseCount, int missionGate) const {
     // 이전 프레임을 지운 뒤 맵 전체를 다시 그려 화면 상태를 단순하게 유지한다.
     erase();
 
@@ -74,21 +74,29 @@ void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool 
     mvprintw(3, infoCol, "Arrow keys: move");
     mvprintw(4, infoCol, "q: quit");
     mvprintw(6, infoCol, "Status: %s", status.c_str());
+    mvprintw(7, infoCol, "Stage: %d", stage);
 
     // Score Board 출력
-    mvprintw(8, infoCol, "Stage: %d", stage);
-    mvprintw(9, infoCol, "B: %d / %d (%c)", int(snake.body().size()), missionLength, (int(snake.body().size()) >= missionLength ? 'v' : ' '));
-    mvprintw(10, infoCol, "+: %d / %d (%c)", growth, missionGrowth, (growth >= missionGrowth ? 'v' : ' '));
-    mvprintw(11, infoCol, "-: %d / %d (%c)", poison, missionPoison, (poison >= missionPoison ? 'v' : ' '));
-    mvprintw(12, infoCol, "G: %d / %d (%c)", gateUseCount, missionGate, (gateUseCount >= missionGate ? 'v' : ' '));
+    mvprintw(9, infoCol, "Score Board");
+    mvprintw(10, infoCol, "B: %d / %d", snake.body().size(), snake.MAX_LENGTH);
+    mvprintw(11, infoCol, "+: %d", growthCount);
+    mvprintw(12, infoCol, "-: %d", poisonCount);
+    mvprintw(13, infoCol, "G: %d", gateUseCount);
+
+    // Mission 출력
+    mvprintw(15, infoCol, "Mission");
+    mvprintw(16, infoCol, "B: %d (%c)", missionLength, (int)snake.body().size() >= missionLength ? 'v' : ' ');
+    mvprintw(17, infoCol, "+: %d (%c)", missionGrowth, growthCount >= missionGrowth ? 'v' : ' ');
+    mvprintw(18, infoCol, "-: %d (%c)", missionPoison, poisonCount >= missionPoison ? 'v' : ' ');
+    mvprintw(19, infoCol, "G: %d (%c)", missionGate, gateUseCount >= missionGate ? 'v' : ' ');
 
     if (stageCleared) {
-        mvprintw(14, infoCol, "STAGE CLEARED!");
-        mvprintw(15, infoCol, "g: next stage  q: quit");
+        mvprintw(21, infoCol, "STAGE CLEARED!");
+        mvprintw(22, infoCol, "g: next stage  q: quit");
     }
     else if (gameOver) {
-        mvprintw(14, infoCol, "GAME OVER");
-        mvprintw(15, infoCol, "r: restart  q: quit");
+        mvprintw(21, infoCol, "GAME OVER");
+        mvprintw(22, infoCol, "r: restart  q: quit");
     }
 
     refresh();
