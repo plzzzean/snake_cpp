@@ -179,7 +179,18 @@ make test
 - `src/Snake.hpp`, `src/Snake.cpp`: `teleportHead()` — Gate 통과 시 머리 위치와 방향 갱신
 - `src/Renderer.hpp`, `src/Renderer.cpp`: Gate 셀을 `G`(파란색)로 표시
 
-## 이후 구현 필요 항목
+## 5단계: Score, Mission, Stage 클리어와 다음 Stage 전환
 
-- 5단계: Score Board, Mission Board, Stage 클리어와 다음 Stage 전환 구현
-- 현재 준비된 10개 Stage 맵에 맞춰 Stage별 Mission 값과 난이도 값을 연결해야 합니다.
+### 구현 완료
+
+- 우측에 게임 점수를 표시하는 화면을 구성한다.
+- Score Board에 현재 길이 / 최대 길이, Growth Item 수, Poison Item 수, Gate 사용 횟수, 게임 시간을 표시한다.
+- Mission을 표시하고 달성 여부를 갱신한다.
+- Mission 달성 시 다음 스테이지로 진행하거나 종료할 수 있다.
+- 10 스테이지를 클리어하면 10 스테이지를 다시 하거나 종료할 수 있다.
+
+### 관련 파일
+
+- `src/Game.hpp`, `src/Game.cpp`: 미션 처리, 스테이지 클리어 처리
+- `src/Snake.hpp`, `src/Snake.cpp`: 최대 길이, 게임 시간
+- `src/Renderer.hpp`, `src/Renderer.cpp`: 스코어보드, 미션 표시
