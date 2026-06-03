@@ -36,4 +36,11 @@ struct Position {
     }
 };
 
+struct Mission {
+    int target_length; // B: 목표 길이
+    int target_growth; // +: 목표 개수
+    int target_poison; // -: 목표 개수
+    int target_gate;   // G: 목표 사용 횟수
+};
+
 #endif

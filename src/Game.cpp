@@ -30,6 +30,8 @@ void Game::run() {
         shouldQuit_ = false;
         shouldRestart_ = false;
         gateUseCount_ = 0;
+        growthCount_ = 0;
+        poisonCount_ = 0;
         status_ = "Running";
         gate_ = Gate{};
 
@@ -51,7 +53,7 @@ void Game::run() {
             const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTick);
 
             // 설정된 Tick 간격이 지났을 때만 Snake를 한 칸 이동시켜 게임 속도를 제어한다.
-            if (!gameOver_ && elapsed.count() >= currentTickMs()) {
+            if (!gameOver_ && !stageCleared_ && elapsed.count() >= currentTickMs()) {
                 const MoveResult result = snake.move(map_);
                 if (result == MoveResult::HitWall) {
                     gameOver_ = true;
@@ -65,20 +67,27 @@ void Game::run() {
                     status_ = "Snake too short";
                 } else if (result == MoveResult::AteGrowth) {
                     status_ = "Ate growth item";
+                    growthCount_++;
                     food_.spawn(map_, occupiedPositions(snake), rng_);
                 } else if (result == MoveResult::AtePoison) {
                     status_ = "Ate poison item";
+                    poisonCount_++;
                     poison_.spawn(map_, occupiedPositions(snake), rng_);
                 }
+                checkMissionCompletion(snake);
                 handleGate(snake);
                 lastTick = now;
             }
 
             // 이동 여부와 관계없이 화면은 계속 갱신해서 입력과 상태 문구가 바로 반영되게 한다.
-            if (!gameOver_) {
+            if (!gameOver_ && !stageCleared_) {
                 refreshExpiredItems(snake);
             }
-            renderer_.draw(map_, snake, gameOver_, status_);
+            renderer_.draw(map_, snake, stageCleared_, gameOver_, status_, 
+               currentStage_, stageMissions_[currentStage_ - 1].target_length,
+               growthCount_, stageMissions_[currentStage_ - 1].target_growth,
+               poisonCount_, stageMissions_[currentStage_ - 1].target_poison,
+               gateUseCount_, stageMissions_[currentStage_ - 1].target_gate);
             std::this_thread::sleep_for(FrameDelay);
         }
     } while (shouldRestart_);
@@ -96,6 +105,14 @@ bool Game::handleInput(int input, Snake& snake) {
     // 종료 키는 게임 오버 여부와 관계없이 즉시 루프 종료 요청으로 처리한다.
     if (input == 'q' || input == 'Q') {
         return true;
+    }
+
+    if (stageCleared_) { // 스테이지 클리어 상태 처리
+        if (input == 'g' || input == 'G') {
+            nextStage();
+            shouldRestart_ = true;
+            return true;
+        }
     }
 
     // 게임 오버 뒤에는 r로 재시작하거나 q로 종료할 수 있다.
@@ -140,24 +157,39 @@ bool Game::handleInput(int input, Snake& snake) {
 }
 
 void Game::loadMap() {
-    // 스테이지 맵 로드에 실패해도 실행은 계속할 수 있도록 fallback 맵을 생성한다.
-    const std::string mapPath = currentMapPath();
-    if (!map_.loadFromFile(mapPath)) {
+    // stageLevel을 사용하여 파일 경로 생성
+    std::string path = "maps/stage" + std::to_string(currentStage_) + ".txt";
+    if (!map_.loadFromFile(path)) {
         map_.loadFallbackMap(currentMapSize());
-        status_ = "Using fallback map";
     }
 }
 
-std::string Game::currentMapPath() const {
-    // 사용자가 직접 mapPath를 지정했으면 스테이지 번호보다 해당 경로를 우선한다.
-    if (!config_.mapPath.empty()) {
-        return config_.mapPath;
+void Game::nextStage() {
+    currentStage_++;
+    if (currentStage_ > 10) { // 마지막 스테이지 클리어 시
+        currentStage_ = 10;
     }
+    stageCleared_ = false;
+    growthCount_ = 0;
+    poisonCount_ = 0;
+    gateUseCount_ = 0;
+    loadMap();
+}
 
-    // 준비된 스테이지 파일 범위를 벗어나지 않도록 1~10 사이로 제한한다.
-    constexpr int MaxStageLevel = 10;
-    const int stageLevel = std::clamp(config_.stageLevel, 1, MaxStageLevel);
-    return "maps/stage" + std::to_string(stageLevel) + ".txt";
+void Game::checkMissionCompletion(const Snake& snake) {
+    const auto& m = stageMissions_[currentStage_ - 1];
+    if (int(snake.body().size()) >= m.target_length && 
+        growthCount_ >= m.target_growth &&
+        poisonCount_ >= m.target_poison &&
+        gateUseCount_ >= m.target_gate) {
+        stageCleared_ = true;
+        if (currentStage_ == config_.stageLevel) {
+            // 마지막 스테이지 클리어 시 게임 종료 처리
+            status_ = "GAME CLEAR!";
+        } else {
+            status_ = "Stage " + std::to_string(currentStage_) + " Cleared!";
+        }
+    }
 }
 
 int Game::currentMapSize() const {
