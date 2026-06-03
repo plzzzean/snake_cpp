@@ -19,7 +19,7 @@ public:
     void shutdown();
 
     // 매 프레임 맵, Snake, 상태 문구를 한 화면에 다시 그린다.
-    void draw(const Map& map, const Snake& snake, bool gameOver, const std::string& status) const;
+    void draw(const Map& map, const Snake& snake, bool stageCleared, bool gameOver, const std::string& status, int stage, int missionLength, int growth, int missionGrowth, int poison, int missionPoison, int gateUseCount, int missionGate) const;
 
 private:
     // CellType을 터미널에 찍을 문자로 변환한다.

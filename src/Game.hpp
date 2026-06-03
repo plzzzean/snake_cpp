@@ -43,9 +43,6 @@ private:
     // 지정된 맵 파일을 읽고, 실패하면 기본 맵으로 대체한다.
     void loadMap();
 
-    // mapPath가 비어 있을 때 stageLevel에 맞는 맵 파일 경로를 만든다.
-    std::string currentMapPath() const;
-
     // stageLevel 구간에 맞는 fallback 맵 크기를 계산한다.
     int currentMapSize() const;
 
@@ -76,9 +73,40 @@ private:
     std::chrono::steady_clock::time_point gateLastClearedAt_;
     int gateUseCount_ = 0;
     bool gameOver_ = false;
+    bool stageCleared_ = false;
     bool shouldQuit_ = false;
     bool shouldRestart_ = false;
     std::string status_ = "Running";
+    int currentStage_ = 1;
+    int growthCount_ = 0;
+    int poisonCount_ = 0;
+
+    // 스테이지별 미션 데이터 (생성자에서 초기화)
+    std::vector<Mission> stageMissions_ = {
+        {5, 3, 1, 1}, // 1단계 미션
+        {6, 3, 1, 1}, // 2단계 미션
+        {6, 4, 1, 1}, // 3단계 미션
+        {6, 4, 2, 1}, // 4단계 미션
+        {7, 4, 2, 1}, // 5단계 미션
+        {7, 4, 2, 2}, // 6단계 미션
+        {7, 5, 2, 2}, // 7단계 미션
+        {7, 5, 3, 2}, // 8단계 미션
+        {8, 5, 3, 2}, // 9단계 미션
+        {10, 10, 5, 3} // 10단계 미션
+        // {4, 0, 0, 0}, // 테스트 용
+        // {4, 0, 0, 0},
+        // {4, 0, 0, 0},
+        // {4, 0, 0, 0},
+        // {4, 0, 0, 0},
+        // {4, 0, 0, 0},
+        // {4, 0, 0, 0},
+        // {4, 0, 0, 0},
+        // {4, 0, 0, 0},
+        // {4, 0, 0, 0}
+    };
+
+    void checkMissionCompletion(const Snake& snake);
+    void nextStage();
 };
 
 #endif
