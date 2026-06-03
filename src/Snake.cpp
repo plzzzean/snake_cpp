@@ -57,6 +57,9 @@ MoveResult Snake::move(Map& map) {
 
     if (nextCell == CellType::GrowthItem) {
         map.setCell(next.row, next.col, CellType::Empty);
+        if ((int)body_.size() > MAX_LENGTH) {
+            body_.pop_back();
+        }
         return MoveResult::AteGrowth;
     }
 
