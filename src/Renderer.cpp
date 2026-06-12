@@ -13,6 +13,7 @@ constexpr short ColorSnakeBody = 4;
 constexpr short ColorGrowthItem = 5;
 constexpr short ColorPoisonItem = 6;
 constexpr short ColorGate = 7;
+constexpr short ColorShieldItem = 8;
 }
 
 void Renderer::init() {
@@ -34,6 +35,7 @@ void Renderer::init() {
         init_pair(ColorGrowthItem, COLOR_MAGENTA, COLOR_BLACK);
         init_pair(ColorPoisonItem, COLOR_RED, COLOR_BLACK);
         init_pair(ColorGate, COLOR_BLUE, COLOR_BLACK);
+        init_pair(ColorShieldItem, COLOR_CYAN, COLOR_BLACK);
     }
 }
 
@@ -41,7 +43,7 @@ void Renderer::shutdown() {
     endwin();
 }
 
-void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool gameOver, const std::string& status, int stage, int missionLength, int growthCount, int missionGrowth, int poisonCount, int missionPoison, int gateUseCount, int missionGate) const {
+void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool gameOver, const std::string& status, int stage, int missionLength, int growthCount, int missionGrowth, int poisonCount, int missionPoison, int gateUseCount, int missionGate, bool hasShield) const {
     // 이전 프레임을 지운 뒤 맵 전체를 다시 그려 화면 상태를 단순하게 유지한다.
     erase();
 
@@ -78,26 +80,27 @@ void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool 
 
     // Score Board 출력
     mvprintw(9, infoCol, "Score Board");
-    mvprintw(10, infoCol, "B: %d / %d", snake.body().size(), snake.MAX_LENGTH);
+    mvprintw(10, infoCol, "B: %d / %d", static_cast<int>(snake.body().size()), snake.MAX_LENGTH);
     mvprintw(11, infoCol, "+: %d", growthCount);
     mvprintw(12, infoCol, "-: %d", poisonCount);
     mvprintw(13, infoCol, "G: %d", gateUseCount);
-    mvprintw(14, infoCol, "Time: %d sec", snake.timeElapsed());
+    mvprintw(14, infoCol, "Shield: %s", hasShield ? "ON" : "OFF");
+    mvprintw(15, infoCol, "Time: %d sec", snake.timeElapsed());
 
     // Mission 출력
-    mvprintw(16, infoCol, "Mission");
-    mvprintw(17, infoCol, "B: %d (%c)", missionLength, (int)snake.body().size() >= missionLength ? 'v' : ' ');
-    mvprintw(18, infoCol, "+: %d (%c)", missionGrowth, growthCount >= missionGrowth ? 'v' : ' ');
-    mvprintw(19, infoCol, "-: %d (%c)", missionPoison, poisonCount >= missionPoison ? 'v' : ' ');
-    mvprintw(20, infoCol, "G: %d (%c)", missionGate, gateUseCount >= missionGate ? 'v' : ' ');
+    mvprintw(17, infoCol, "Mission");
+    mvprintw(18, infoCol, "B: %d (%c)", missionLength, (int)snake.body().size() >= missionLength ? 'v' : ' ');
+    mvprintw(19, infoCol, "+: %d (%c)", missionGrowth, growthCount >= missionGrowth ? 'v' : ' ');
+    mvprintw(20, infoCol, "-: %d (%c)", missionPoison, poisonCount >= missionPoison ? 'v' : ' ');
+    mvprintw(21, infoCol, "G: %d (%c)", missionGate, gateUseCount >= missionGate ? 'v' : ' ');
 
     if (stageCleared) {
-        mvprintw(22, infoCol, "STAGE CLEARED!");
-        mvprintw(23, infoCol, "g: next stage  q: quit");
+        mvprintw(23, infoCol, "STAGE CLEARED!");
+        mvprintw(24, infoCol, "g: next stage  q: quit");
     }
     else if (gameOver) {
-        mvprintw(22, infoCol, "GAME OVER");
-        mvprintw(23, infoCol, "r: restart  q: quit");
+        mvprintw(23, infoCol, "GAME OVER");
+        mvprintw(24, infoCol, "r: restart  q: quit");
     }
 
     refresh();
@@ -122,6 +125,8 @@ char Renderer::symbolFor(CellType cell) {
         return '-';
     case CellType::Gate:
         return 'G';
+    case CellType::ShieldItem:
+        return 'S';
     }
     return '?';
 }
@@ -143,6 +148,8 @@ short Renderer::colorFor(CellType cell) {
         return ColorPoisonItem;
     case CellType::Gate:
         return ColorGate;
+    case CellType::ShieldItem:
+        return ColorShieldItem;
     default:
         return 0;
     }

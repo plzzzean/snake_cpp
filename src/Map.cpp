@@ -123,7 +123,7 @@ void Map::clearCells(CellType cell) {
 }
 
 bool Map::placeRandomItem(CellType item, const std::vector<Position>& occupied, std::mt19937& rng) {
-    if (item != CellType::GrowthItem && item != CellType::PoisonItem) {
+    if (item != CellType::GrowthItem && item != CellType::PoisonItem && item != CellType::ShieldItem) {
         return false;
     }
 
@@ -197,5 +197,5 @@ bool Map::validateGrid(const std::vector<std::vector<CellType>>& grid) {
 
 bool Map::isKnownCellValue(int value) {
     return value >= static_cast<int>(CellType::Empty)
-        && value <= static_cast<int>(CellType::Gate);
+        && value <= static_cast<int>(CellType::ShieldItem);
 }

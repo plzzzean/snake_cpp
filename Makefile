@@ -11,7 +11,7 @@ SRC := $(wildcard src/*.cpp)
 BUILD_DIR := build
 OBJ := $(patsubst src/%.cpp,$(BUILD_DIR)/%.o,$(SRC))
 TEST_TARGET := $(BUILD_DIR)/snake_tests
-TEST_SRC := tests/test_logic.cpp src/Food.cpp src/Gate.cpp src/Map.cpp src/Poison.cpp src/Snake.cpp
+TEST_SRC := tests/test_logic.cpp src/Food.cpp src/Gate.cpp src/Map.cpp src/Poison.cpp src/Shield.cpp src/Snake.cpp
 
 .PHONY: all run test clean
 

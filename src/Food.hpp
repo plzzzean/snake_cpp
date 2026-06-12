@@ -14,8 +14,8 @@
 // Food는 Snake 길이를 증가시키는 Growth Item의 출현 정책을 담당한다.
 class Food {
 public:
-    // 과제 기준의 총 아이템 3개 제한을 맞추기 위해 Growth Item은 2개까지 유지한다.
-    static constexpr int MaxCount = 2;
+    // Shield Item 추가 후 총 아이템 3개 제한을 맞추기 위해 Growth Item은 1개만 유지한다.
+    static constexpr int MaxCount = 1;
 
     // Snake와 벽, Gate가 없는 빈 칸에 Growth Item을 다시 배치한다.
     void spawn(Map& map, const std::vector<Position>& occupied, std::mt19937& rng);
