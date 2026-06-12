@@ -14,6 +14,7 @@
 #include "Map.hpp"
 #include "Poison.hpp"
 #include "Renderer.hpp"
+#include "Shield.hpp"
 #include "Snake.hpp"
 
 // 게임 속도, 스테이지, 맵 경로처럼 실행 시 바꿀 수 있는 설정값이다.
@@ -68,6 +69,7 @@ private:
     Food food_;
     Gate gate_;
     Poison poison_;
+    Shield shield_;
     Renderer renderer_;
     std::mt19937 rng_;
     std::chrono::steady_clock::time_point gateLastClearedAt_;
@@ -80,6 +82,7 @@ private:
     int currentStage_ = 1;
     int growthCount_ = 0;
     int poisonCount_ = 0;
+    bool hasShield_ = false;
 
     // 스테이지별 미션 데이터 (생성자에서 초기화)
     std::vector<Mission> stageMissions_ = {

@@ -74,6 +74,11 @@ MoveResult Snake::move(Map& map) {
         return MoveResult::AtePoison;
     }
 
+    if (nextCell == CellType::ShieldItem) {
+        map.setCell(next.row, next.col, CellType::Empty);
+        return MoveResult::AteShield;
+    }
+
     return MoveResult::Moved;
 }
 

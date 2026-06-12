@@ -9,6 +9,7 @@
 #include "Food.hpp"
 #include "Map.hpp"
 #include "Poison.hpp"
+#include "Shield.hpp"
 #include "Snake.hpp"
 
 namespace {
@@ -142,6 +143,19 @@ void testPoisonItemTooShortGameOverResult() {
     assert(snake.body().size() == 2);
 }
 
+void testShieldItemKeepsLengthAndClearsCell() {
+    Map map;
+    map.loadFallbackMap();
+    map.setCell(10, 11, CellType::ShieldItem);
+
+    Snake snake({10, 10}, Direction::Right);
+    assert(snake.body().size() == 3);
+    // Shield Item을 밟으면 길이는 유지하고 Shield 획득 결과를 반환한다.
+    assert(snake.move(map) == MoveResult::AteShield);
+    assert(snake.body().size() == 3);
+    assert(map.at(10, 11) == CellType::Empty);
+}
+
 void testItemSpawnsOnlyOnEmptyCell() {
     Map map;
     map.loadFallbackMap();
@@ -151,30 +165,37 @@ void testItemSpawnsOnlyOnEmptyCell() {
 
     assert(map.placeRandomItem(CellType::GrowthItem, occupied, rng));
     assert(map.placeRandomItem(CellType::PoisonItem, occupied, rng));
+    assert(map.placeRandomItem(CellType::ShieldItem, occupied, rng));
     assert(map.countCells(CellType::GrowthItem) == 1);
     assert(map.countCells(CellType::PoisonItem) == 1);
+    assert(map.countCells(CellType::ShieldItem) == 1);
 
     for (const Position& position : occupied) {
         assert(map.at(position.row, position.col) != CellType::GrowthItem);
         assert(map.at(position.row, position.col) != CellType::PoisonItem);
+        assert(map.at(position.row, position.col) != CellType::ShieldItem);
     }
 
     for (int row = 0; row < map.rows(); ++row) {
         assert(map.at(row, 0) != CellType::GrowthItem);
         assert(map.at(row, 0) != CellType::PoisonItem);
+        assert(map.at(row, 0) != CellType::ShieldItem);
         assert(map.at(row, map.cols() - 1) != CellType::GrowthItem);
         assert(map.at(row, map.cols() - 1) != CellType::PoisonItem);
+        assert(map.at(row, map.cols() - 1) != CellType::ShieldItem);
     }
 
     for (int col = 0; col < map.cols(); ++col) {
         assert(map.at(0, col) != CellType::GrowthItem);
         assert(map.at(0, col) != CellType::PoisonItem);
+        assert(map.at(0, col) != CellType::ShieldItem);
         assert(map.at(map.rows() - 1, col) != CellType::GrowthItem);
         assert(map.at(map.rows() - 1, col) != CellType::PoisonItem);
+        assert(map.at(map.rows() - 1, col) != CellType::ShieldItem);
     }
 }
 
-void testFoodAndPoisonKeepTotalItemLimit() {
+void testItemManagersKeepTotalItemLimit() {
     Map map;
     map.loadFallbackMap();
     Snake snake({10, 10}, Direction::Right);
@@ -182,13 +203,16 @@ void testFoodAndPoisonKeepTotalItemLimit() {
     std::mt19937 rng(2);
     Food food;
     Poison poison;
+    Shield shield;
 
     food.spawn(map, occupied, rng);
     poison.spawn(map, occupied, rng);
+    shield.spawn(map, occupied, rng);
 
     assert(map.countCells(CellType::GrowthItem) == Food::MaxCount);
     assert(map.countCells(CellType::PoisonItem) == Poison::MaxCount);
-    assert(map.countCells(CellType::GrowthItem) + map.countCells(CellType::PoisonItem) == 3);
+    assert(map.countCells(CellType::ShieldItem) == Shield::MaxCount);
+    assert(map.countCells(CellType::GrowthItem) + map.countCells(CellType::PoisonItem) + map.countCells(CellType::ShieldItem) == 3);
 }
 
 void testItemManagersDoNotSpawnOnSnakeOrGate() {
@@ -201,13 +225,16 @@ void testItemManagersDoNotSpawnOnSnakeOrGate() {
     std::mt19937 rng(3);
     Food food;
     Poison poison;
+    Shield shield;
 
     food.spawn(map, occupied, rng);
     poison.spawn(map, occupied, rng);
+    shield.spawn(map, occupied, rng);
 
     for (const Position& position : occupied) {
         assert(map.at(position.row, position.col) != CellType::GrowthItem);
         assert(map.at(position.row, position.col) != CellType::PoisonItem);
+        assert(map.at(position.row, position.col) != CellType::ShieldItem);
     }
     assert(map.at(5, 5) == CellType::Gate);
 }
@@ -220,14 +247,18 @@ void testItemManagersRefreshPolicyKeepsCountsBeforeExpiry() {
     std::mt19937 rng(4);
     Food food;
     Poison poison;
+    Shield shield;
 
     food.spawn(map, occupied, rng);
     poison.spawn(map, occupied, rng);
+    shield.spawn(map, occupied, rng);
     food.refreshIfExpired(map, occupied, rng);
     poison.refreshIfExpired(map, occupied, rng);
+    shield.refreshIfExpired(map, occupied, rng);
 
     assert(map.countCells(CellType::GrowthItem) == Food::MaxCount);
     assert(map.countCells(CellType::PoisonItem) == Poison::MaxCount);
+    assert(map.countCells(CellType::ShieldItem) == Shield::MaxCount);
 }
 
 int main() {
@@ -240,8 +271,9 @@ int main() {
     testGrowthItemIncreasesLength();
     testPoisonItemDecreasesLength();
     testPoisonItemTooShortGameOverResult();
+    testShieldItemKeepsLengthAndClearsCell();
     testItemSpawnsOnlyOnEmptyCell();
-    testFoodAndPoisonKeepTotalItemLimit();
+    testItemManagersKeepTotalItemLimit();
     testItemManagersDoNotSpawnOnSnakeOrGate();
     testItemManagersRefreshPolicyKeepsCountsBeforeExpiry();
     return 0;

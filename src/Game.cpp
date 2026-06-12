@@ -14,6 +14,41 @@
 
 namespace {
 constexpr std::chrono::milliseconds FrameDelay{16};
+
+Position nextPosition(Position current, Direction direction) {
+    switch (direction) {
+    case Direction::Up:
+        return {current.row - 1, current.col};
+    case Direction::Down:
+        return {current.row + 1, current.col};
+    case Direction::Left:
+        return {current.row, current.col - 1};
+    case Direction::Right:
+        return {current.row, current.col + 1};
+    }
+    return current;
+}
+
+bool recoverFromGateBodyCollision(Snake& snake, Position exitGate, const Map& map) {
+    const Direction directions[] = {Direction::Up, Direction::Down, Direction::Left, Direction::Right};
+    const auto& body = snake.body();
+
+    for (const Direction direction : directions) {
+        const Position candidate = nextPosition(exitGate, direction);
+        if (map.isBlocked(candidate.row, candidate.col)) {
+            continue;
+        }
+
+        const bool hitsBody = std::any_of(body.begin() + 1, body.end(),
+            [candidate](const Position& part) { return part == candidate; });
+        if (!hitsBody) {
+            snake.teleportHead(candidate, direction);
+            return true;
+        }
+    }
+
+    return false;
+}
 }
 
 Game::Game(GameConfig config)
@@ -32,6 +67,7 @@ void Game::run() {
         gateUseCount_ = 0;
         growthCount_ = 0;
         poisonCount_ = 0;
+        hasShield_ = false;
         status_ = "Running";
         gate_ = Gate{};
 
@@ -56,11 +92,21 @@ void Game::run() {
             if (!gameOver_ && !stageCleared_ && elapsed.count() >= currentTickMs()) {
                 const MoveResult result = snake.move(map_);
                 if (result == MoveResult::HitWall) {
-                    gameOver_ = true;
-                    status_ = "Hit wall";
+                    if (hasShield_) {
+                        hasShield_ = false;
+                        status_ = "Shield blocked wall";
+                    } else {
+                        gameOver_ = true;
+                        status_ = "Hit wall";
+                    }
                 } else if (result == MoveResult::HitSelf) {
-                    gameOver_ = true;
-                    status_ = "Hit body";
+                    if (hasShield_) {
+                        hasShield_ = false;
+                        status_ = "Shield blocked body";
+                    } else {
+                        gameOver_ = true;
+                        status_ = "Hit body";
+                    }
                 } else if (result == MoveResult::TooShort) {
                     // Poison Item 획득으로 길이가 3 미만이 되면 과제 규칙상 실패 처리한다.
                     gameOver_ = true;
@@ -73,6 +119,10 @@ void Game::run() {
                     status_ = "Ate poison item";
                     poisonCount_++;
                     poison_.spawn(map_, occupiedPositions(snake), rng_);
+                } else if (result == MoveResult::AteShield) {
+                    hasShield_ = true;
+                    status_ = "Ate shield item";
+                    shield_.spawn(map_, occupiedPositions(snake), rng_);
                 }
                 checkMissionCompletion(snake);
                 handleGate(snake);
@@ -87,7 +137,8 @@ void Game::run() {
                currentStage_, stageMissions_[currentStage_ - 1].target_length,
                growthCount_, stageMissions_[currentStage_ - 1].target_growth,
                poisonCount_, stageMissions_[currentStage_ - 1].target_poison,
-               gateUseCount_, stageMissions_[currentStage_ - 1].target_gate);
+               gateUseCount_, stageMissions_[currentStage_ - 1].target_gate,
+               hasShield_);
             std::this_thread::sleep_for(FrameDelay);
         }
     } while (shouldRestart_);
@@ -173,6 +224,7 @@ void Game::nextStage() {
     growthCount_ = 0;
     poisonCount_ = 0;
     gateUseCount_ = 0;
+    hasShield_ = false;
     loadMap();
 }
 
@@ -217,12 +269,14 @@ void Game::spawnItems(const Snake& snake) {
     const std::vector<Position> occupied = occupiedPositions(snake);
     food_.spawn(map_, occupied, rng_);
     poison_.spawn(map_, occupied, rng_);
+    shield_.spawn(map_, occupied, rng_);
 }
 
 void Game::refreshExpiredItems(const Snake& snake) {
     const std::vector<Position> occupied = occupiedPositions(snake);
     food_.refreshIfExpired(map_, occupied, rng_);
     poison_.refreshIfExpired(map_, occupied, rng_);
+    shield_.refreshIfExpired(map_, occupied, rng_);
 }
 
 void Game::handleGate(Snake& snake) {
@@ -243,6 +297,10 @@ void Game::handleGate(Snake& snake) {
     // Snake 머리가 Gate에 진입했으므로 출구 위치와 방향을 계산한다.
     const Direction entryDir = snake.direction();
     const auto [exitPos, exitDir] = gate_.calcExit(snake.head(), entryDir, map_);
+    const Position exitGate = nextPosition(exitPos, exitDir == Direction::Up ? Direction::Down
+        : exitDir == Direction::Down ? Direction::Up
+        : exitDir == Direction::Left ? Direction::Right
+        : Direction::Left);
 
     // Gate를 먼저 제거한 뒤 Snake를 출구로 순간이동시킨다.
     gate_.clear(map_);
@@ -258,8 +316,13 @@ void Game::handleGate(Snake& snake) {
     const bool selfCollision = std::any_of(body.begin() + 1, body.end(),
         [exitPosVal](const Position& p) { return p == exitPosVal; });
     if (selfCollision) {
-        gameOver_ = true;
-        status_ = "Hit body (via gate)";
+        if (hasShield_ && recoverFromGateBodyCollision(snake, exitGate, map_)) {
+            hasShield_ = false;
+            status_ = "Shield blocked body";
+        } else {
+            gameOver_ = true;
+            status_ = "Hit body (via gate)";
+        }
     }
 }
 

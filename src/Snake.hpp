@@ -5,6 +5,7 @@
 #define SNAKE_HPP
 
 #include <deque>
+#include <chrono>
 
 #include "Map.hpp"
 #include "Types.hpp"
@@ -14,6 +15,7 @@ enum class MoveResult {
     Moved,
     AteGrowth,
     AtePoison,
+    AteShield,
     HitWall,
     HitSelf,
     TooShort

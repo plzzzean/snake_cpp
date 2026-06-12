@@ -14,7 +14,8 @@ enum class CellType {
     SnakeBody = 4,
     GrowthItem = 5,
     PoisonItem = 6,
-    Gate = 7
+    Gate = 7,
+    ShieldItem = 8
 };
 
 // Snake가 현재 이동 중인 방향이다.
