@@ -22,10 +22,10 @@ public:
     void clear(Map& map);
 
     // 주어진 위치가 현재 활성 Gate 위치인지 확인한다.
-    bool isGatePosition(Position pos) const;
+    bool isGatePosition(const Position& pos) const;
 
     // entryGate에 진입한 방향을 바탕으로 반대편 Gate의 출구 위치와 진출 방향을 반환한다.
-    std::pair<Position, Direction> calcExit(Position entryGate, Direction entryDir, const Map& map) const;
+    std::pair<Position, Direction> calcExit(const Position& entryGate, Direction entryDir, const Map& map) const;
 
     // Gate가 활성 상태인지 반환한다.
     bool isActive() const;

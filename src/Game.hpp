@@ -58,7 +58,7 @@ private:
     // Food와 Poison 객체에 현재 Snake 위치를 전달해 아이템을 초기 배치한다.
     void spawnItems(const Snake& snake);
 
-    // 5초가 지난 아이템을 과제 규칙에 맞게 새 위치로 재생성한다.
+    // 재생성 주기가 지난 아이템을 과제 규칙에 맞게 새 위치로 재생성한다.
     void refreshExpiredItems(const Snake& snake);
 
     // 일정 주기마다 Dynamic Wall을 안전한 빈 칸으로 이동시킨다.

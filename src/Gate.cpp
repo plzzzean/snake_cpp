@@ -50,11 +50,11 @@ void Gate::clear(Map& map) {
     active_ = false;
 }
 
-bool Gate::isGatePosition(Position pos) const {
+bool Gate::isGatePosition(const Position& pos) const {
     return active_ && (pos == gateA_ || pos == gateB_);
 }
 
-std::pair<Position, Direction> Gate::calcExit(Position entryGate, Direction entryDir, const Map& map) const {
+std::pair<Position, Direction> Gate::calcExit(const Position& entryGate, Direction entryDir, const Map& map) const {
     // 진입한 Gate의 반대편 Gate가 출구다.
     const Position exitGate = (entryGate == gateA_) ? gateB_ : gateA_;
 

@@ -79,7 +79,7 @@ MoveResult Snake::move(Map& map) {
     return MoveResult::Moved;
 }
 
-bool Snake::occupies(Position position) const {
+bool Snake::occupies(const Position& position) const {
     return std::find(body_.begin(), body_.end(), position) != body_.end();
 }
 

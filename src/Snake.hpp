@@ -36,7 +36,7 @@ public:
     MoveResult move(Map& map);
 
     // 렌더러가 특정 좌표에 Snake가 있는지 확인할 때 사용한다.
-    bool occupies(Position position) const;
+    bool occupies(const Position& position) const;
 
     const std::deque<Position>& body() const;
     Position head() const;

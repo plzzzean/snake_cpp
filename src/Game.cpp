@@ -224,7 +224,7 @@ bool Game::handleInput(int input, Snake& snake) {
 
 void Game::loadMap() {
     // stageLevel을 사용하여 파일 경로 생성
-    std::string path = "maps/stage" + std::to_string(currentStage_) + ".txt";
+    const std::string path = "maps/stage" + std::to_string(currentStage_) + ".txt";
     if (!map_.loadFromFile(path)) {
         map_.loadFallbackMap(currentMapSize());
     }
