@@ -1,5 +1,5 @@
 // Food.cpp
-// Food 클래스의 Growth Item 배치와 5초 재생성 정책을 구현한다.
+// Food 클래스의 Growth Item 배치와 10초 재생성 정책을 구현한다.
 
 #include "Food.hpp"
 

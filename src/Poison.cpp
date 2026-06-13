@@ -1,5 +1,5 @@
 // Poison.cpp
-// Poison 클래스의 Poison Item 배치와 5초 재생성 정책을 구현한다.
+// Poison 클래스의 Poison Item 배치와 10초 재생성 정책을 구현한다.
 
 #include "Poison.hpp"
 

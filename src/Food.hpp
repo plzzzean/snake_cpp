@@ -20,7 +20,7 @@ public:
     // Snake와 벽, Gate가 없는 빈 칸에 Growth Item을 다시 배치한다.
     void spawn(Map& map, const std::vector<Position>& occupied, std::mt19937& rng);
 
-    // 마지막 생성 후 5초가 지났으면 Growth Item 위치를 새로 뽑는다.
+    // 마지막 생성 후 10초가 지났으면 Growth Item 위치를 새로 뽑는다.
     void refreshIfExpired(Map& map, const std::vector<Position>& occupied, std::mt19937& rng);
 
 private:
