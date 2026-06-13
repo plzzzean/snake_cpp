@@ -24,7 +24,7 @@ public:
     void refreshIfExpired(Map& map, const std::vector<Position>& occupied, std::mt19937& rng);
 
 private:
-    static constexpr std::chrono::seconds Lifetime{5};
+    static constexpr std::chrono::seconds Lifetime{10};
 
     std::chrono::steady_clock::time_point createdAt_{};
     bool spawned_ = false;
