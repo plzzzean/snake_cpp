@@ -19,7 +19,7 @@ public:
     void shutdown() const;
 
     // 매 프레임 맵, Snake, 상태 문구를 한 화면에 다시 그린다.
-    void draw(const Map& map, const Snake& snake, bool stageCleared, bool gameOver, const std::string& status, int stage, int missionLength, int growth, int missionGrowth, int poison, int missionPoison, int gateUseCount, int missionGate, bool hasShield) const;
+    void draw(const Map& map, const Snake& snake, bool stageCleared, bool gameOver, const std::string& status, int stage, int missionLength, int growth, int missionGrowth, int poison, int missionPoison, int gateUseCount, int missionGate, bool hasShield, std::chrono::steady_clock::time_point runStartTime, std::chrono::steady_clock::time_point levelStartTime, std::chrono::steady_clock::time_point gameStartTime, std::chrono::steady_clock::time_point now, int levelDeaths, int totalDeaths) const;
 
 private:
     static constexpr short ColorWall = 1;

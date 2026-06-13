@@ -68,6 +68,7 @@ void Game::run() {
         growthCount_ = 0;
         poisonCount_ = 0;
         hasShield_ = false;
+        runStartTime_ = std::chrono::steady_clock::now();
         status_ = "Running";
         gate_ = Gate{};
         dynamicWall_ = DynamicWall{};
@@ -100,6 +101,8 @@ void Game::run() {
                         status_ = "Shield blocked wall";
                     } else {
                         gameOver_ = true;
+                        levelDeaths_++;
+                        totalDeaths_++;
                         status_ = "Hit wall";
                     }
                 } else if (result == MoveResult::HitSelf) {
@@ -108,11 +111,15 @@ void Game::run() {
                         status_ = "Shield blocked body";
                     } else {
                         gameOver_ = true;
+                        levelDeaths_++;
+                        totalDeaths_++;
                         status_ = "Hit body";
                     }
                 } else if (result == MoveResult::TooShort) {
                     // Poison Item 획득으로 길이가 3 미만이 되면 과제 규칙상 실패 처리한다.
                     gameOver_ = true;
+                    levelDeaths_++;
+                    totalDeaths_++;
                     status_ = "Snake too short";
                 } else if (result == MoveResult::AteGrowth) {
                     status_ = "Ate growth item";
@@ -143,7 +150,8 @@ void Game::run() {
                growthCount_, mission.target_growth,
                poisonCount_, mission.target_poison,
                gateUseCount_, mission.target_gate,
-               hasShield_);
+               hasShield_, runStartTime_, levelStartTime_, gameStartTime_, now,
+               levelDeaths_, totalDeaths_);
             std::this_thread::sleep_for(FrameDelay);
         }
     } while (shouldRestart_);
@@ -205,6 +213,8 @@ bool Game::handleInput(int input, Snake& snake) {
         // Snake 규칙상 정반대 방향 입력은 자기 몸으로 되돌아가는 입력이므로 게임 오버로 처리한다.
         if (!snake.setDirection(next)) {
             gameOver_ = true;
+            levelDeaths_++;
+            totalDeaths_++;
             status_ = "Reverse direction";
         }
     }
@@ -230,6 +240,8 @@ void Game::nextStage() {
     poisonCount_ = 0;
     gateUseCount_ = 0;
     hasShield_ = false;
+    levelStartTime_ = std::chrono::steady_clock::now();
+    levelDeaths_ = 0;
     loadMap();
 }
 
@@ -347,6 +359,8 @@ void Game::handleGate(Snake& snake) {
             status_ = "Shield blocked body";
         } else {
             gameOver_ = true;
+            levelDeaths_++;
+            totalDeaths_++;
             status_ = "Hit body (via gate)";
             return;
         }

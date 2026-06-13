@@ -94,6 +94,11 @@ private:
     int poisonCount_ = 0;
     bool hasShield_ = false;
     bool gateTraversalActive_ = false;
+    std::chrono::steady_clock::time_point runStartTime_ = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point levelStartTime_ = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point gameStartTime_ = std::chrono::steady_clock::now();
+    int levelDeaths_ = 0;
+    int totalDeaths_ = 0;
 
     // 실행 중 변경되지 않는 스테이지별 미션 목표다.
     const std::array<Mission, 10> stageMissions_{{

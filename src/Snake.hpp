@@ -45,8 +45,6 @@ public:
     // Gate 출구에 새 머리를 추가하고 꼬리를 줄여 길이를 유지한다.
     void teleportHead(Position newHead, Direction newDir);
 
-    long long timeElapsed() const;
-
 private:
     // 현재 좌표와 방향으로 다음 머리 좌표를 계산한다.
     static Position nextPosition(Position current, Direction direction);
@@ -57,7 +55,6 @@ private:
     std::deque<Position> body_;
     Direction direction_;
     int maxLength_ = 3;
-    std::chrono::steady_clock::time_point startTime_;
 };
 
 #endif

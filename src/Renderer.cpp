@@ -33,7 +33,7 @@ void Renderer::shutdown() const {
     endwin();
 }
 
-void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool gameOver, const std::string& status, int stage, int missionLength, int growthCount, int missionGrowth, int poisonCount, int missionPoison, int gateUseCount, int missionGate, bool hasShield) const {
+void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool gameOver, const std::string& status, int stage, int missionLength, int growthCount, int missionGrowth, int poisonCount, int missionPoison, int gateUseCount, int missionGate, bool hasShield, std::chrono::steady_clock::time_point runStartTime, std::chrono::steady_clock::time_point levelStartTime, std::chrono::steady_clock::time_point gameStartTime, std::chrono::steady_clock::time_point now, int levelDeaths, int totalDeaths) const {
     // 이전 프레임을 지운 뒤 맵 전체를 다시 그려 화면 상태를 단순하게 유지한다.
     erase();
 
@@ -75,22 +75,23 @@ void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool 
     mvprintw(12, infoCol, "-: %d", poisonCount);
     mvprintw(13, infoCol, "G: %d", gateUseCount);
     mvprintw(14, infoCol, "Shield: %s", hasShield ? "ON" : "OFF");
-    mvprintw(15, infoCol, "Time: %lld sec", snake.timeElapsed());
+    mvprintw(15, infoCol, "Time: %lld / %lld / %lld sec", std::chrono::duration_cast<std::chrono::seconds>(now - runStartTime).count(), std::chrono::duration_cast<std::chrono::seconds>(now - levelStartTime).count(), std::chrono::duration_cast<std::chrono::seconds>(now - gameStartTime).count());
+    mvprintw(16, infoCol, "Deaths: %d / %d", levelDeaths, totalDeaths);
 
     // Mission 출력
-    mvprintw(17, infoCol, "Mission");
-    mvprintw(18, infoCol, "B: %d (%c)", missionLength, (int)snake.body().size() >= missionLength ? 'v' : ' ');
-    mvprintw(19, infoCol, "+: %d (%c)", missionGrowth, growthCount >= missionGrowth ? 'v' : ' ');
-    mvprintw(20, infoCol, "-: %d (%c)", missionPoison, poisonCount >= missionPoison ? 'v' : ' ');
-    mvprintw(21, infoCol, "G: %d (%c)", missionGate, gateUseCount >= missionGate ? 'v' : ' ');
+    mvprintw(18, infoCol, "Mission");
+    mvprintw(19, infoCol, "B: %d (%c)", missionLength, (int)snake.body().size() >= missionLength ? 'v' : ' ');
+    mvprintw(20, infoCol, "+: %d (%c)", missionGrowth, growthCount >= missionGrowth ? 'v' : ' ');
+    mvprintw(21, infoCol, "-: %d (%c)", missionPoison, poisonCount >= missionPoison ? 'v' : ' ');
+    mvprintw(22, infoCol, "G: %d (%c)", missionGate, gateUseCount >= missionGate ? 'v' : ' ');
 
     if (stageCleared) {
-        mvprintw(23, infoCol, "STAGE CLEARED!");
-        mvprintw(24, infoCol, "g: next stage  q: quit");
+        mvprintw(24, infoCol, "STAGE CLEARED!");
+        mvprintw(25, infoCol, "g: next stage  q: quit");
     }
     else if (gameOver) {
-        mvprintw(23, infoCol, "GAME OVER");
-        mvprintw(24, infoCol, "r: restart  q: quit");
+        mvprintw(24, infoCol, "GAME OVER");
+        mvprintw(25, infoCol, "r: restart  q: quit");
     }
 
     refresh();
