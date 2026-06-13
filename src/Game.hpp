@@ -4,12 +4,14 @@
 #ifndef GAME_HPP
 #define GAME_HPP
 
+#include <array>
 #include <chrono>
 #include <random>
 #include <string>
 #include <vector>
 
 #include "Food.hpp"
+#include "DynamicWall.hpp"
 #include "Gate.hpp"
 #include "Map.hpp"
 #include "Poison.hpp"
@@ -44,8 +46,11 @@ private:
     // 지정된 맵 파일을 읽고, 실패하면 기본 맵으로 대체한다.
     void loadMap();
 
-    // stageLevel 구간에 맞는 fallback 맵 크기를 계산한다.
+    // 현재 스테이지 구간에 맞는 fallback 맵 크기를 계산한다.
     int currentMapSize() const;
+
+    // 현재 스테이지의 읽기 전용 Mission 목표를 반환한다.
+    const Mission& currentMission() const;
 
     // 현재 맵 중앙에서 오른쪽 방향으로 출발하는 Snake를 만든다.
     Snake createInitialSnake() const;
@@ -56,6 +61,9 @@ private:
     // 5초가 지난 아이템을 과제 규칙에 맞게 새 위치로 재생성한다.
     void refreshExpiredItems(const Snake& snake);
 
+    // 일정 주기마다 Dynamic Wall을 안전한 빈 칸으로 이동시킨다.
+    void updateDynamicWall(const Snake& snake);
+
     // Gate 생성 대기, Snake 진입 감지, 순간이동, 사용 후 제거를 처리한다.
     void handleGate(Snake& snake);
 
@@ -63,10 +71,12 @@ private:
 
     // Gate는 게임 시작 후 일정 시간이 지나면 출현하고, 통과 후 다시 대기한다.
     static constexpr int GateSpawnDelaySeconds = 10;
+    static constexpr std::chrono::milliseconds FrameDelay{16};
 
-    GameConfig config_;
+    const GameConfig config_;
     Map map_;
     Food food_;
+    DynamicWall dynamicWall_;
     Gate gate_;
     Poison poison_;
     Shield shield_;
@@ -83,9 +93,10 @@ private:
     int growthCount_ = 0;
     int poisonCount_ = 0;
     bool hasShield_ = false;
+    bool gateTraversalActive_ = false;
 
-    // 스테이지별 미션 데이터 (생성자에서 초기화)
-    std::vector<Mission> stageMissions_ = {
+    // 실행 중 변경되지 않는 스테이지별 미션 목표다.
+    const std::array<Mission, 10> stageMissions_{{
         {5, 3, 1, 1}, // 1단계 미션
         {6, 3, 1, 1}, // 2단계 미션
         {6, 4, 1, 1}, // 3단계 미션
@@ -96,17 +107,7 @@ private:
         {7, 5, 3, 2}, // 8단계 미션
         {8, 5, 3, 2}, // 9단계 미션
         {10, 10, 5, 3} // 10단계 미션
-        // {4, 0, 0, 0}, // 테스트 용
-        // {4, 0, 0, 0},
-        // {4, 0, 0, 0},
-        // {4, 0, 0, 0},
-        // {4, 0, 0, 0},
-        // {4, 0, 0, 0},
-        // {4, 0, 0, 0},
-        // {4, 0, 0, 0},
-        // {4, 0, 0, 0},
-        // {4, 0, 0, 0}
-    };
+    }};
 
     void checkMissionCompletion(const Snake& snake);
     void nextStage();

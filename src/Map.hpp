@@ -43,6 +43,8 @@ public:
     const std::string& errorMessage() const;
 
 private:
+    static constexpr int MinPlayableMapSize = 21;
+
     // 플레이 가능한 최소 크기와 직사각형 형태인지 확인한다.
     bool validateGrid(const std::vector<std::vector<CellType>>& grid);
 

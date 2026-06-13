@@ -1,5 +1,5 @@
 // test_logic.cpp
-// Map 로드와 Snake 이동 규칙을 assert로 확인하는 간단한 로직 테스트다.
+// Map, Snake, Item, Gate, Dynamic Wall 핵심 규칙을 assert로 검증한다.
 
 #include <cassert>
 #include <random>
@@ -7,14 +7,14 @@
 #include <vector>
 
 #include "Food.hpp"
+#include "DynamicWall.hpp"
+#include "Gate.hpp"
 #include "Map.hpp"
 #include "Poison.hpp"
 #include "Shield.hpp"
 #include "Snake.hpp"
 
 namespace {
-constexpr int StageCount = 10;
-
 bool isOuterWall(CellType cell) {
     return cell == CellType::Wall || cell == CellType::ImmuneWall;
 }
@@ -46,6 +46,7 @@ void testMapLoadsStageFile() {
 }
 
 void testAllStageMapsAreValid() {
+    constexpr int StageCount = 10;
     for (int stage = 1; stage <= StageCount; ++stage) {
         Map map;
         const std::string path = "maps/stage" + std::to_string(stage) + ".txt";
@@ -112,7 +113,140 @@ void testGrowthItemIncreasesLength() {
     // Growth Item을 밟으면 꼬리를 제거하지 않아 Snake 길이가 1 증가한다.
     assert(snake.move(map) == MoveResult::AteGrowth);
     assert(snake.body().size() == 4);
+    assert(snake.maxLength() == 4);
     assert(map.at(10, 11) == CellType::Empty);
+}
+
+void testMaximumLengthTracksPeakLength() {
+    Map map;
+    map.loadFallbackMap();
+    Snake snake({10, 10}, Direction::Right);
+
+    map.setCell(10, 11, CellType::GrowthItem);
+    assert(snake.move(map) == MoveResult::AteGrowth);
+    map.setCell(10, 12, CellType::PoisonItem);
+    assert(snake.move(map) == MoveResult::AtePoison);
+
+    assert(snake.body().size() == 3);
+    assert(snake.maxLength() == 4);
+}
+
+void testDynamicWallMovesOnlyToSafeEmptyCell() {
+    Map map;
+    assert(map.loadFromFile("maps/stage1.txt"));
+    std::mt19937 rng(5);
+    DynamicWall wall;
+
+    assert(wall.initialize(map, rng));
+    const Position original = wall.position();
+    assert(map.at(original.row, original.col) == CellType::DynamicWall);
+    assert(map.isBlocked(original.row, original.col));
+
+    const std::vector<Position> occupied{{10, 10}, {10, 9}, {10, 8}};
+    const auto afterInterval = std::chrono::steady_clock::now() + DynamicWall::MoveInterval;
+    assert(wall.update(map, occupied, rng, afterInterval));
+    const Position moved = wall.position();
+
+    assert(!(moved == original));
+    assert(map.at(original.row, original.col) == CellType::Empty);
+    assert(map.at(moved.row, moved.col) == CellType::DynamicWall);
+    for (const Position& position : occupied) {
+        assert(!(moved == position));
+    }
+}
+
+void testGateRestoresDynamicWallAfterClear() {
+    Map map;
+    map.loadFallbackMap();
+    for (int row = 0; row < map.rows(); ++row) {
+        for (int col = 0; col < map.cols(); ++col) {
+            if (map.at(row, col) == CellType::Wall) {
+                map.setCell(row, col, CellType::ImmuneWall);
+            }
+        }
+    }
+    map.setCell(5, 5, CellType::Wall);
+    map.setCell(6, 6, CellType::DynamicWall);
+
+    Snake snake({10, 10}, Direction::Right);
+    std::mt19937 rng(6);
+    Gate gate;
+    assert(gate.spawn(map, snake, rng));
+    assert(map.countCells(CellType::Gate) == 2);
+
+    gate.clear(map);
+    assert(map.at(5, 5) == CellType::Wall);
+    assert(map.at(6, 6) == CellType::DynamicWall);
+}
+
+void testGateExitDirectionsFollowRules() {
+    Map map;
+    map.loadFallbackMap();
+    for (int row = 0; row < map.rows(); ++row) {
+        for (int col = 0; col < map.cols(); ++col) {
+            if (map.at(row, col) == CellType::Wall) {
+                map.setCell(row, col, CellType::ImmuneWall);
+            }
+        }
+    }
+
+    const Position borderWall{0, 5};
+    const Position interiorWall{5, 5};
+    map.setCell(borderWall.row, borderWall.col, CellType::Wall);
+    map.setCell(interiorWall.row, interiorWall.col, CellType::Wall);
+
+    Snake snake({10, 10}, Direction::Right);
+    std::mt19937 rng(7);
+    Gate gate;
+    assert(gate.spawn(map, snake, rng));
+
+    const auto [borderExit, borderDirection] = gate.calcExit(interiorWall, Direction::Left, map);
+    assert(borderDirection == Direction::Down);
+    assert((borderExit == Position{1, 5}));
+
+    const auto [interiorExit, interiorDirection] = gate.calcExit(borderWall, Direction::Right, map);
+    assert(interiorDirection == Direction::Right);
+    assert((interiorExit == Position{5, 6}));
+}
+
+void testGateRejectsBlockedWallCandidatesAndDuplicateSpawn() {
+    Map map;
+    map.loadFallbackMap();
+    for (int row = 0; row < map.rows(); ++row) {
+        for (int col = 0; col < map.cols(); ++col) {
+            if (map.at(row, col) == CellType::Wall) {
+                map.setCell(row, col, CellType::ImmuneWall);
+            }
+        }
+    }
+
+    // (5, 5)는 사방이 막혀 Gate 출구로 사용할 수 없다.
+    map.setCell(5, 5, CellType::Wall);
+    map.setCell(4, 5, CellType::ImmuneWall);
+    map.setCell(6, 5, CellType::ImmuneWall);
+    map.setCell(5, 4, CellType::ImmuneWall);
+    map.setCell(5, 6, CellType::ImmuneWall);
+    map.setCell(8, 8, CellType::Wall);
+
+    Snake snake({10, 10}, Direction::Right);
+    std::mt19937 rng(8);
+    Gate gate;
+    assert(!gate.spawn(map, snake, rng));
+
+    map.setCell(12, 12, CellType::Wall);
+    assert(gate.spawn(map, snake, rng));
+    assert(!gate.spawn(map, snake, rng));
+    assert(map.countCells(CellType::Gate) == 2);
+}
+
+void testTeleportPreservesEntryGateInBody() {
+    Snake snake({10, 10}, Direction::Right);
+    const Position entryGate = snake.head();
+    snake.teleportHead({5, 5}, Direction::Down);
+
+    assert((snake.head() == Position{5, 5}));
+    assert(snake.occupies(entryGate));
+    assert(snake.body().size() == 3);
 }
 
 void testPoisonItemDecreasesLength() {
@@ -269,6 +403,12 @@ int main() {
     testSnakeMovesForward();
     testSnakeHitsWall();
     testGrowthItemIncreasesLength();
+    testMaximumLengthTracksPeakLength();
+    testDynamicWallMovesOnlyToSafeEmptyCell();
+    testGateRestoresDynamicWallAfterClear();
+    testGateExitDirectionsFollowRules();
+    testGateRejectsBlockedWallCandidatesAndDuplicateSpawn();
+    testTeleportPreservesEntryGateInBody();
     testPoisonItemDecreasesLength();
     testPoisonItemTooShortGameOverResult();
     testShieldItemKeepsLengthAndClearsCell();

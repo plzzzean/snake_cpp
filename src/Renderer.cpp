@@ -5,18 +5,7 @@
 
 #include <ncurses.h>
 
-namespace {
-constexpr short ColorWall = 1;
-constexpr short ColorImmuneWall = 2;
-constexpr short ColorSnakeHead = 3;
-constexpr short ColorSnakeBody = 4;
-constexpr short ColorGrowthItem = 5;
-constexpr short ColorPoisonItem = 6;
-constexpr short ColorGate = 7;
-constexpr short ColorShieldItem = 8;
-}
-
-void Renderer::init() {
+void Renderer::init() const {
     // ncurses를 키 입력을 즉시 받고 커서를 숨기는 게임 화면 모드로 설정한다.
     initscr();
     noecho();
@@ -36,10 +25,11 @@ void Renderer::init() {
         init_pair(ColorPoisonItem, COLOR_RED, COLOR_BLACK);
         init_pair(ColorGate, COLOR_BLUE, COLOR_BLACK);
         init_pair(ColorShieldItem, COLOR_CYAN, COLOR_BLACK);
+        init_pair(ColorDynamicWall, COLOR_MAGENTA, COLOR_BLACK);
     }
 }
 
-void Renderer::shutdown() {
+void Renderer::shutdown() const {
     endwin();
 }
 
@@ -80,12 +70,12 @@ void Renderer::draw(const Map& map, const Snake& snake, bool stageCleared, bool 
 
     // Score Board 출력
     mvprintw(9, infoCol, "Score Board");
-    mvprintw(10, infoCol, "B: %d / %d", static_cast<int>(snake.body().size()), snake.MAX_LENGTH);
+    mvprintw(10, infoCol, "B: %d / %d", static_cast<int>(snake.body().size()), snake.maxLength());
     mvprintw(11, infoCol, "+: %d", growthCount);
     mvprintw(12, infoCol, "-: %d", poisonCount);
     mvprintw(13, infoCol, "G: %d", gateUseCount);
     mvprintw(14, infoCol, "Shield: %s", hasShield ? "ON" : "OFF");
-    mvprintw(15, infoCol, "Time: %d sec", snake.timeElapsed());
+    mvprintw(15, infoCol, "Time: %lld sec", snake.timeElapsed());
 
     // Mission 출력
     mvprintw(17, infoCol, "Mission");
@@ -127,6 +117,8 @@ char Renderer::symbolFor(CellType cell) {
         return 'G';
     case CellType::ShieldItem:
         return 'S';
+    case CellType::DynamicWall:
+        return 'D';
     }
     return '?';
 }
@@ -150,6 +142,8 @@ short Renderer::colorFor(CellType cell) {
         return ColorGate;
     case CellType::ShieldItem:
         return ColorShieldItem;
+    case CellType::DynamicWall:
+        return ColorDynamicWall;
     default:
         return 0;
     }

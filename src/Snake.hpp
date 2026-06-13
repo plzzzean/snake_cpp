@@ -4,8 +4,8 @@
 #ifndef SNAKE_HPP
 #define SNAKE_HPP
 
-#include <deque>
 #include <chrono>
+#include <deque>
 
 #include "Map.hpp"
 #include "Types.hpp"
@@ -40,13 +40,12 @@ public:
 
     const std::deque<Position>& body() const;
     Position head() const;
+    int maxLength() const;
 
-    // Gate 통과 시 머리 위치와 이동 방향을 출구 기준으로 즉시 교체한다.
+    // Gate 출구에 새 머리를 추가하고 꼬리를 줄여 길이를 유지한다.
     void teleportHead(Position newHead, Direction newDir);
 
-    const int MAX_LENGTH = 15;
-
-    int timeElapsed() const;
+    long long timeElapsed() const;
 
 private:
     // 현재 좌표와 방향으로 다음 머리 좌표를 계산한다.
@@ -57,6 +56,7 @@ private:
 
     std::deque<Position> body_;
     Direction direction_;
+    int maxLength_ = 3;
     std::chrono::steady_clock::time_point startTime_;
 };
 

@@ -67,7 +67,7 @@ Mission Board에는 각 항목별 목표치와 달성 여부를 표시한다.
 - Poison Item을 획득하면 Snake의 몸 길이가 1 감소한다.
 - Poison Item으로 몸 길이가 3보다 작아지면 Game Over로 처리한다.
 - Poison Item은 최대 1개까지 생성한다.
-- 전체 Item 수는 최대 3개로 제한한다. 현재 구현은 Growth Item 2개 + Poison Item 1개 구조다.
+- 전체 Item 수는 최대 3개로 제한한다. 현재 구현은 Growth Item 1개 + Poison Item 1개 + Shield Item 1개 구조다.
 - Growth Item과 Poison Item은 Snake Body가 없는 임의의 빈 위치에 출현한다.
 - Item은 Wall, Immune Wall, Snake 몸통, Gate 위치와 겹치지 않는다.
 - Item은 출현 후 5초가 지나면 기존 위치에서 사라지고 다른 빈 위치에 다시 나타난다.
@@ -200,6 +200,10 @@ Gate가 Map 가운데 Wall에 있을 때는 다음 우선순위로 진출 방향
 - Gate 사용 횟수를 `Game::gateUseCount_`로 추적한다.
 - `Renderer`는 Gate 셀을 `G` 기호와 파란색으로 표시한다.
 - Item 배치 후보에서 Gate 위치를 제외한다.
+- Snake 몸통이 입구 Gate를 완전히 벗어날 때까지 Gate 쌍을 유지한다.
+- `DynamicWall` 클래스가 내부 Wall 하나를 `D`로 표시하고 8초마다 안전한 빈 칸으로 이동시킨다.
+- Dynamic Wall은 Snake 머리의 인접 칸, 몸통, Item, Gate, 외곽 Wall, Immune Wall을 이동 후보에서 제외한다.
+- Dynamic Wall이 Gate가 되면 통과 완료 후 원래 Dynamic Wall로 복원한다.
 
 ### 5단계: Score Board / Mission / Stage
 

@@ -8,7 +8,7 @@
 - `maps/stage1.txt`부터 `maps/stage10.txt`까지 총 10개 스테이지 맵이 준비되어 있습니다.
 - 현재 기본 실행 설정은 `GameConfig.stageLevel = 10`이며, `mapPath`가 비어 있으면 `maps/stage10.txt`를 로드합니다.
 - 빌드 산출물은 `build/` 디렉터리와 루트 실행 파일 `snake`로 생성되며, `.gitignore`로 제외됩니다.
-- 아직 Gate, Score Board, Mission Board, Stage 클리어/전환 로직은 구현되지 않았습니다.
+- Gate, Score Board, Mission Board, Stage 클리어/전환 로직과 Dynamic Wall 추가 기능이 구현되어 있습니다.
 
 ## 1단계: Map 표시
 
@@ -105,7 +105,7 @@
 - Poison Item을 획득하면 Snake 길이가 1 감소합니다.
 - Poison Item 획득 후 Snake 길이가 3보다 작아지면 Game Over가 됩니다.
 - 전체 Item 수는 최대 3개입니다.
-- 현재 생성 정책은 Growth Item 2개 + Poison Item 1개입니다.
+- 현재 생성 정책은 Growth Item 1개 + Poison Item 1개 + Shield Item 1개입니다.
 - Item은 Wall, Immune Wall, Snake 몸통, Gate 위치와 겹치지 않는 빈 칸에 생성됩니다.
 - Item은 5초마다 기존 위치에서 사라지고 다른 빈 위치에 재생성됩니다.
 
@@ -132,7 +132,7 @@
 - Poison Item 획득 시 Snake 길이가 1 감소하는지 확인
 - Poison Item 획득 후 길이가 3보다 작아지면 `TooShort` 결과가 반환되는지 확인
 - Item이 Snake 몸통 위치와 Gate 위치에 생성되지 않는지 확인
-- Growth Item 2개 + Poison Item 1개로 전체 Item 수가 3개인지 확인
+- Growth Item 1개 + Poison Item 1개 + Shield Item 1개로 전체 Item 수가 3개인지 확인
 - Item 재생성 정책 호출 후 개수 정책이 유지되는지 확인
 - `make test` 실행 시 테스트 바이너리는 `build/snake_tests`로 생성되는지 확인
 
@@ -159,7 +159,7 @@ make test
 - Gate는 한 번에 한 쌍만 활성 상태를 유지합니다.
 - 게임 시작 후 10초가 지나면 Gate 쌍이 출현합니다.
 - Snake 머리가 Gate 위치에 도달하면 반대편 Gate 출구로 순간이동합니다.
-- Gate 통과 후 Gate는 제거되며, 이후 10초가 지나면 새 Gate 쌍이 다시 출현합니다.
+- Snake 몸통이 입구 Gate를 벗어나면 Gate를 제거하며, 이후 10초가 지나면 새 Gate 쌍이 다시 출현합니다.
 - Snake가 Gate에 진입 중일 때는 Gate가 사라지지 않으며, 새 Gate도 생성되지 않습니다.
 - 출구 Gate가 가장자리 Wall에 있으면 항상 맵 안쪽 방향으로 진출합니다.
   - 상단 벽 → 아래 방향
@@ -171,10 +171,14 @@ make test
 - Gate 출구에서 자기 몸통과 충돌하면 Game Over로 처리합니다.
 - Gate 사용 횟수를 `gateUseCount_`로 추적합니다.
 - Item 배치 후보에서 Gate 위치를 제외합니다.
+- Snake 몸통이 입구 Gate를 완전히 벗어날 때까지 Gate 쌍을 유지합니다.
+- Dynamic Wall은 8초마다 Snake, Item, Gate를 피해 내부 빈 칸으로 이동합니다.
+- Dynamic Wall이 Gate가 된 경우 통과 완료 후 원래 Dynamic Wall로 복원합니다.
 
 ### 관련 파일
 
 - `src/Gate.hpp`, `src/Gate.cpp`: Gate 생성, 출구 방향 계산, 활성 상태 관리
+- `src/DynamicWall.hpp`, `src/DynamicWall.cpp`: 이동 Wall 초기화, 주기 확인, 안전 재배치
 - `src/Game.hpp`, `src/Game.cpp`: Gate 생성 대기, 진입 감지, 순간이동, 통과 후 제거
 - `src/Snake.hpp`, `src/Snake.cpp`: `teleportHead()` — Gate 통과 시 머리 위치와 방향 갱신
 - `src/Renderer.hpp`, `src/Renderer.cpp`: Gate 셀을 `G`(파란색)로 표시

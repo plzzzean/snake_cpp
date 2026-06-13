@@ -6,11 +6,18 @@
 #include <algorithm>
 
 bool Gate::spawn(Map& map, const Snake& snake, std::mt19937& rng) {
-    // ImmuneWall을 제외한 일반 Wall 셀 중 Snake가 점유하지 않은 위치를 후보로 모은다.
+    // 활성 Gate가 있으면 새 쌍을 만들지 않아 한 번에 한 쌍만 유지한다.
+    if (active_) {
+        return false;
+    }
+
+    // Immune Wall을 제외하고 실제 출구가 확보된 Wall만 후보로 모은다.
     std::vector<Position> candidates;
     for (int row = 0; row < map.rows(); ++row) {
         for (int col = 0; col < map.cols(); ++col) {
-            if (map.at(row, col) == CellType::Wall && !snake.occupies({row, col})) {
+            const CellType cell = map.at(row, col);
+            if ((cell == CellType::Wall || cell == CellType::DynamicWall)
+                && !snake.occupies({row, col}) && hasUsableExit({row, col}, map)) {
                 candidates.push_back({row, col});
             }
         }
@@ -24,6 +31,8 @@ bool Gate::spawn(Map& map, const Snake& snake, std::mt19937& rng) {
     std::shuffle(candidates.begin(), candidates.end(), rng);
     gateA_ = candidates[0];
     gateB_ = candidates[1];
+    gateAOriginal_ = map.at(gateA_.row, gateA_.col);
+    gateBOriginal_ = map.at(gateB_.row, gateB_.col);
     active_ = true;
 
     map.setCell(gateA_.row, gateA_.col, CellType::Gate);
@@ -35,9 +44,9 @@ void Gate::clear(Map& map) {
     if (!active_) {
         return;
     }
-    // Gate 위치를 일반 Wall로 복원한다.
-    map.setCell(gateA_.row, gateA_.col, CellType::Wall);
-    map.setCell(gateB_.row, gateB_.col, CellType::Wall);
+    // Gate 생성 전에 저장한 셀 종류로 복원해 Dynamic Wall도 보존한다.
+    map.setCell(gateA_.row, gateA_.col, gateAOriginal_);
+    map.setCell(gateB_.row, gateB_.col, gateBOriginal_);
     active_ = false;
 }
 
@@ -67,10 +76,6 @@ std::pair<Position, Direction> Gate::calcExit(Position entryGate, Direction entr
 
 bool Gate::isActive() const {
     return active_;
-}
-
-int Gate::useCount() const {
-    return useCount_;
 }
 
 bool Gate::isBorderWall(Position pos, const Map& map) const {
@@ -114,6 +119,20 @@ bool Gate::canExitTo(Position exitGatePos, Direction dir, const Map& map) const 
     case Direction::Right: next.col += 1; break;
     }
     return !map.isBlocked(next.row, next.col);
+}
+
+bool Gate::hasUsableExit(Position wallPosition, const Map& map) const {
+    if (isBorderWall(wallPosition, map)) {
+        return canExitTo(wallPosition, borderExitDir(wallPosition, map), map);
+    }
+
+    constexpr Direction Directions[] = {
+        Direction::Up, Direction::Down, Direction::Left, Direction::Right
+    };
+    return std::any_of(std::begin(Directions), std::end(Directions),
+        [this, wallPosition, &map](Direction direction) {
+            return canExitTo(wallPosition, direction, map);
+        });
 }
 
 Direction Gate::clockwise(Direction dir) {

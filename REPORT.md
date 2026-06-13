@@ -2,7 +2,7 @@
 
 ## 1. 개발 목표
 
-본 프로젝트는 C++과 `ncurses`를 사용해 터미널에서 실행되는 Snake Game을 구현하는 것을 목표로 한다. 이 수정본의 담당 범위는 맵 로드, Snake 이동, 충돌 처리, 스테이지 맵 선택, 화면 출력, Stage3 Item 기능, Stage4 Gate 기능, 빌드 및 테스트 구조이다.
+본 프로젝트는 C++과 `ncurses`를 사용해 터미널에서 실행되는 Snake Game을 구현하는 것을 목표로 한다. 개인 담당 범위는 5단계 중 4단계인 Wall/Gate 상호작용이며, 기본 Gate 규칙과 Wall 변화 추가 기능을 구현했다.
 
 ## 2. 구현 기능
 
@@ -12,16 +12,20 @@
 - `Food` 클래스가 Growth Item의 생성 개수와 5초 재생성 정책을 관리한다.
 - `Poison` 클래스가 Poison Item의 생성 개수와 5초 재생성 정책을 관리한다.
 - `Gate` 클래스가 Gate 쌍의 생성, 진출 방향 계산, 활성 상태 추적을 담당한다.
+- `DynamicWall` 클래스가 내부 Wall의 초기 선택과 8초 주기 재배치를 담당한다.
 - `Game` 클래스가 입력 처리, Tick 기반 이동, 게임 오버 상태, 스테이지별 맵 선택, Item 초기 배치와 재생성 호출, Gate 생성 대기와 진입 처리를 관리한다.
 - `Renderer` 클래스가 `ncurses` 초기화, 종료, 맵과 Snake 출력을 담당한다.
 - Growth Item은 `+`로 표시하며, 획득 시 Snake 길이가 1 증가한다.
 - Poison Item은 `-`로 표시하며, 획득 시 Snake 길이가 1 감소한다.
 - Poison Item 획득 후 Snake 길이가 3보다 작아지면 Game Over로 처리한다.
-- 전체 Item 수는 Growth Item 2개 + Poison Item 1개, 최대 3개로 제한한다.
+- 전체 Item 수는 Growth Item 1개 + Poison Item 1개 + Shield Item 1개, 최대 3개로 제한한다.
 - Item은 Wall, Immune Wall, Snake 몸통, Gate 위치와 겹치지 않는 빈 칸에 생성하며 5초마다 재생성한다.
 - Gate는 게임 시작 후 10초가 지나면 ImmuneWall을 제외한 일반 Wall 위치 두 곳에 출현한다.
 - Snake 머리가 Gate에 진입하면 반대편 Gate 출구로 순간이동하며, 가장자리 벽은 항상 안쪽 방향, 내부 벽은 진입 방향 우선순위로 진출 방향을 결정한다.
 - Gate 통과 후 자기 몸통과 충돌하면 Game Over로 처리한다.
+- Snake 몸통이 입구 Gate를 완전히 빠져나갈 때까지 Gate 쌍을 유지하고, 이후 원래 Wall 종류로 복원한다.
+- Dynamic Wall은 `D`로 표시되며 8초마다 Snake, Item, Gate를 피한 내부 빈 칸으로 이동한다.
+- Dynamic Wall은 일반 Wall처럼 충돌을 처리하며 Gate로 변할 수 있고, Gate 종료 후에도 Dynamic Wall로 복원된다.
 - `tests/test_logic.cpp`에서 맵 로드, 스테이지 맵 검증, Snake 이동 규칙, Item 획득 효과와 생성 정책을 assert 기반으로 테스트한다.
 
 ## 3. 클래스 구조
@@ -29,6 +33,7 @@
 | 클래스 | 헤더/구현 파일 | 역할 |
 |---|---|---|
 | `Game` | `src/Game.hpp`, `src/Game.cpp` | 전체 게임 루프, 입력, Tick, 상태 관리, Gate 진입 처리 |
+| `DynamicWall` | `src/DynamicWall.hpp`, `src/DynamicWall.cpp` | 이동 Wall의 생성, 주기 확인, 안전 재배치 |
 | `Food` | `src/Food.hpp`, `src/Food.cpp` | Growth Item 생성, 개수 제한, 5초 재생성 관리 |
 | `Gate` | `src/Gate.hpp`, `src/Gate.cpp` | Gate 쌍 생성, 진출 방향 계산, 활성 상태 관리 |
 | `Map` | `src/Map.hpp`, `src/Map.cpp` | board 역할, 맵 로드, 맵 검증, 충돌 판정 |
@@ -42,15 +47,14 @@
 
 | 담당 영역 | 실제 구현 내용 |
 |---|---|
-| 맵/board | `Map` 클래스, 스테이지 맵 파일 10개, 맵 검증 |
-| Snake 로직 | 방향 변경, Tick 이동, 벽 충돌, 몸통 충돌, `teleportHead()` |
-| Item 로직 | `Food`, `Poison` 클래스, Growth 2개 + Poison 1개 생성, 5초 재생성 |
-| Gate 로직 | `Gate` 클래스, Wall 기반 쌍 생성, 가장자리/내부 벽 진출 방향 결정, 통과 처리 |
-| 게임 흐름 | `Game` 클래스, 입력 처리, 게임 오버 상태, Item 배치, Gate 생성 대기와 진입 감지 |
-| 화면 출력 | `Renderer` 클래스, ncurses 기반 맵/Snake/Gate 표시 |
-| 품질 관리 | Makefile, 테스트 코드, 파일별 역할 주석, `const` 점검 |
+| Gate 생성 | 일반 Wall과 Dynamic Wall 중 두 곳을 선택하고 Immune Wall은 제외 |
+| Gate 진출 | 가장자리 안쪽 고정 방향, 내부 벽의 직진/시계/반시계/반대 우선순위 구현 |
+| Gate 생명주기 | 생성 대기, 진입 감지, 몸통 통과 중 유지, 통과 완료 후 원래 벽 복원 |
+| Wall 추가 기능 | `DynamicWall` 클래스로 8초마다 안전한 빈 칸으로 이동하는 Wall 구현 |
+| 충돌/표시 | Wall 충돌 처리, Gate `G`, Dynamic Wall `D` 및 색상 구분 |
+| 검증 | Gate 원상복구, Dynamic Wall 이동, 충돌 판정, Gate 통과 몸통 보존 테스트 |
 
-Stage3의 Food, Poison 동작과 Stage4의 Gate 동작이 구현되었다. Score Board, Mission Board는 이후 팀 통합 단계에서 연결할 영역이다.
+Stage4의 필수 Wall/Gate 동작과 4단계(2)의 Wall 변화 추가 사항을 구현했다. Score Board와 Mission Board도 현재 통합되어 Gate 사용 횟수와 스테이지 진행을 확인할 수 있다.
 
 ## 5. 실행 및 테스트
 
@@ -78,6 +82,17 @@ make test
 make clean
 ```
 
+### 5.1 소스코드 품질 점검
+
+- 모든 `.hpp`, `.cpp` 파일 첫 부분에 파일 역할을 설명하는 주석을 작성했다.
+- `Gate`, `DynamicWall` 등 주요 클래스는 선언 파일과 구현 파일을 분리했다.
+- 상태를 변경하지 않는 멤버 함수에는 `const`를 지정하고, 읽기 전용 객체 인자는 `const` 참조로 전달했다.
+- `Map&`, `Snake&`, `std::mt19937&`처럼 실제 상태 변경이 필요한 인자만 비-const 참조로 유지했다.
+- 실행 중 변경되지 않는 설정, Mission 표, 시간 간격, 색상 번호는 `const` 또는 `static constexpr`로 선언했다.
+- mutable 전역변수와 전역 상수 변수를 사용하지 않고 상태를 각 클래스 멤버로 관리했다.
+- 복잡한 Gate 진출 우선순위, Gate 통과 상태, Dynamic Wall 안전 이동 조건에는 동작 이유를 설명하는 주석을 작성했다.
+- `-Wall -Wextra -Wconversion -Wshadow -pedantic` 경고 검사와 AddressSanitizer/UndefinedBehaviorSanitizer 검사를 수행했다.
+
 Stage4 Gate 구현 후 다음 명령을 순서대로 실행해 통과를 확인했다.
 
 ```bash
@@ -98,11 +113,22 @@ make test
 - 게임 시작 후 10초가 지나 Gate 쌍이 출현하는 장면을 보여준다.
 - Snake가 Gate에 진입해 반대편 Gate 출구로 순간이동하는 장면을 보여준다.
 - 가장자리 벽 Gate에서 안쪽 방향으로 진출하는 장면을 보여준다.
-- `Map`, `Snake`, `Game`, `Renderer`, `Food`, `Poison`, `Gate`이 각각 어떤 역할인지 코드 파일을 열어 설명한다.
-- 본인 담당 범위(1~4단계)와 Score/Mission 담당 범위가 분리되어 있음을 보고서 기준으로 설명한다.
+- 내부 벽 Gate가 직진 → 시계 → 반시계 → 반대 방향 우선순위를 따르는 장면을 보여준다.
+- Snake 몸통이 입구 Gate를 벗어날 때까지 Gate가 유지되는 장면을 보여준다.
+- Dynamic Wall `D`가 8초 후 다른 안전한 빈 칸으로 이동하는 장면을 보여준다.
+- Dynamic Wall 충돌 및 Dynamic Wall이 Gate로 변한 뒤 다시 `D`로 복원되는 장면을 보여준다.
+- `Gate`, `DynamicWall`, `Game`, `Map`, `Snake`, `Renderer`의 역할과 상호작용을 코드에서 설명한다.
+- 개인 담당 범위가 4단계 Wall/Gate 및 Wall 변화 추가 기능임을 구체적으로 설명한다.
+
+### 6.1 발표 영상 링크
+
+- 팀장 전체 프로젝트 및 데모 영상: `[YouTube 링크 입력]`
+- 개인 담당 부분 설명 영상: `[YouTube 링크 입력]`
 
 ## 7. 어려웠던 점과 개선점
 
 맵 파일을 여러 크기의 스테이지로 관리하면서도 Snake 시작 위치와 충돌 판정이 안정적으로 동작하도록 검증하는 부분이 중요했다. 이를 위해 모든 스테이지 맵의 크기, 외곽 벽, 중앙 시작 구간을 테스트로 확인했다.
 
-Stage3 Item 구현에서는 기존 `Game`에 몰려 있던 생성/재생성 책임을 `Food`, `Poison` 클래스로 나눠 유지보수성을 높였다. Stage4 Gate 구현에서는 진출 방향 결정 로직(가장자리/내부 벽 분기, 우선순위 탐색)과 Gate 생명주기(생성 대기 → 활성 → 통과 → 제거)를 `Gate` 클래스로 분리해 `Game` 루프가 단순한 호출 구조를 유지하도록 했다. 추후 팀 통합 단계에서는 Score Board, Mission Board를 `Game` 루프와 `Renderer` 출력에 연결하면 전체 과제 요구사항을 완성할 수 있다.
+Stage4 Gate 구현에서는 가장자리와 내부 벽의 진출 규칙, Gate 생성 후보, 원래 벽 복원, Snake 몸통 통과 상태를 함께 관리해야 했다. 진출 방향과 Gate 상태는 `Gate` 클래스로 분리하고, 게임 진행에 따른 생성과 제거는 `Game`이 조정하도록 책임을 나눴다.
+
+추가 기능은 단순한 색상 변경이 아니라 실제 경로가 변하는 Dynamic Wall로 설계했다. 이동 시 Snake, Item, Gate를 후보에서 제외해 불공정한 즉시 충돌이나 객체 덮어쓰기를 방지했다. Dynamic Wall이 Gate로 선택된 경우 원래 셀 종류를 저장해 통과 완료 후 `D`로 복원하도록 구현했다. 향후에는 이동 직전 시각 경고를 추가해 플레이어가 경로 변화를 더 쉽게 예측하도록 개선할 수 있다.

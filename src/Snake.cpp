@@ -58,9 +58,7 @@ MoveResult Snake::move(Map& map) {
 
     if (nextCell == CellType::GrowthItem) {
         map.setCell(next.row, next.col, CellType::Empty);
-        if ((int)body_.size() > MAX_LENGTH) {
-            body_.pop_back();
-        }
+        maxLength_ = std::max(maxLength_, static_cast<int>(body_.size()));
         return MoveResult::AteGrowth;
     }
 
@@ -94,9 +92,14 @@ Position Snake::head() const {
     return body_.front();
 }
 
+int Snake::maxLength() const {
+    return maxLength_;
+}
+
 void Snake::teleportHead(Position newHead, Direction newDir) {
-    // 머리 좌표와 이동 방향을 Gate 출구 기준으로 교체한다.
-    body_.front() = newHead;
+    // 새 머리를 출구에 추가하고 꼬리를 줄여 입구 Gate를 통과 중인 몸통 위치를 보존한다.
+    body_.push_front(newHead);
+    body_.pop_back();
     direction_ = newDir;
 }
 
@@ -123,7 +126,7 @@ bool Snake::isOpposite(Direction current, Direction next) {
         || (current == Direction::Right && next == Direction::Left);
 }
 
-int Snake::timeElapsed() const {
-    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+long long Snake::timeElapsed() const {
+    const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
     return std::chrono::duration_cast<std::chrono::seconds>(now - startTime_).count();
 }

@@ -30,8 +30,6 @@ public:
     // Gate가 활성 상태인지 반환한다.
     bool isActive() const;
 
-    int useCount() const;
-
 private:
     // 해당 Gate 위치가 맵 가장자리 벽인지 확인한다.
     bool isBorderWall(Position pos, const Map& map) const;
@@ -45,6 +43,9 @@ private:
     // exitGatePos에서 dir 방향으로 이동한 칸이 진출 가능한지 확인한다.
     bool canExitTo(Position exitGatePos, Direction dir, const Map& map) const;
 
+    // Wall이 출구가 되었을 때 과제 우선순위에 따라 진출 가능한 칸이 있는지 확인한다.
+    bool hasUsableExit(Position wallPosition, const Map& map) const;
+
     // 진입 방향의 시계방향을 반환한다.
     static Direction clockwise(Direction dir);
 
@@ -56,8 +57,9 @@ private:
 
     Position gateA_{};
     Position gateB_{};
+    CellType gateAOriginal_ = CellType::Wall;
+    CellType gateBOriginal_ = CellType::Wall;
     bool active_ = false;
-    int useCount_ = 0;
 };
 
 #endif

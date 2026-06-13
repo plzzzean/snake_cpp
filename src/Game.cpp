@@ -13,8 +13,6 @@
 #include <ncurses.h>
 
 namespace {
-constexpr std::chrono::milliseconds FrameDelay{16};
-
 Position nextPosition(Position current, Direction direction) {
     switch (direction) {
     case Direction::Up:
@@ -29,7 +27,8 @@ Position nextPosition(Position current, Direction direction) {
     return current;
 }
 
-bool recoverFromGateBodyCollision(Snake& snake, Position exitGate, const Map& map) {
+bool findSafeGateExit(const Snake& snake, Position exitGate, const Map& map,
+                      Position& safePosition, Direction& safeDirection) {
     const Direction directions[] = {Direction::Up, Direction::Down, Direction::Left, Direction::Right};
     const auto& body = snake.body();
 
@@ -42,7 +41,8 @@ bool recoverFromGateBodyCollision(Snake& snake, Position exitGate, const Map& ma
         const bool hitsBody = std::any_of(body.begin() + 1, body.end(),
             [candidate](const Position& part) { return part == candidate; });
         if (!hitsBody) {
-            snake.teleportHead(candidate, direction);
+            safePosition = candidate;
+            safeDirection = direction;
             return true;
         }
     }
@@ -70,9 +70,12 @@ void Game::run() {
         hasShield_ = false;
         status_ = "Running";
         gate_ = Gate{};
+        dynamicWall_ = DynamicWall{};
+        gateTraversalActive_ = false;
 
         loadMap();
         Snake snake = createInitialSnake();
+        dynamicWall_.initialize(map_, rng_);
         spawnItems(snake);
 
         auto lastTick = std::chrono::steady_clock::now();
@@ -132,12 +135,14 @@ void Game::run() {
             // 이동 여부와 관계없이 화면은 계속 갱신해서 입력과 상태 문구가 바로 반영되게 한다.
             if (!gameOver_ && !stageCleared_) {
                 refreshExpiredItems(snake);
+                updateDynamicWall(snake);
             }
-            renderer_.draw(map_, snake, stageCleared_, gameOver_, status_, 
-               currentStage_, stageMissions_[currentStage_ - 1].target_length,
-               growthCount_, stageMissions_[currentStage_ - 1].target_growth,
-               poisonCount_, stageMissions_[currentStage_ - 1].target_poison,
-               gateUseCount_, stageMissions_[currentStage_ - 1].target_gate,
+            const Mission& mission = currentMission();
+            renderer_.draw(map_, snake, stageCleared_, gameOver_, status_,
+               currentStage_, mission.target_length,
+               growthCount_, mission.target_growth,
+               poisonCount_, mission.target_poison,
+               gateUseCount_, mission.target_gate,
                hasShield_);
             std::this_thread::sleep_for(FrameDelay);
         }
@@ -148,7 +153,7 @@ void Game::run() {
 
 int Game::currentTickMs() const {
     // 스테이지가 높을수록 Tick을 줄이되, 너무 빨라지지 않도록 minTickMs로 하한을 둔다.
-    const int stagePenalty = std::max(0, config_.stageLevel - 1) * config_.stageSpeedStepMs;
+    const int stagePenalty = std::max(0, currentStage_ - 1) * config_.stageSpeedStepMs;
     return std::max(config_.minTickMs, config_.baseTickMs - stagePenalty);
 }
 
@@ -229,7 +234,7 @@ void Game::nextStage() {
 }
 
 void Game::checkMissionCompletion(const Snake& snake) {
-    const auto& m = stageMissions_[currentStage_ - 1];
+    const Mission& m = currentMission();
     if ((int)snake.body().size() >= m.target_length && 
         growthCount_ >= m.target_growth &&
         poisonCount_ >= m.target_poison &&
@@ -246,7 +251,7 @@ void Game::checkMissionCompletion(const Snake& snake) {
 
 int Game::currentMapSize() const {
     // fallback 맵도 스테이지가 높을수록 작아지게 맞춰 실제 스테이지 난이도 흐름을 따라간다.
-    const int stageLevel = std::max(1, config_.stageLevel);
+    const int stageLevel = std::max(1, currentStage_);
 
     if (stageLevel <= 2) {
         return 27;
@@ -258,6 +263,11 @@ int Game::currentMapSize() const {
         return 23;
     }
     return 21;
+}
+
+const Mission& Game::currentMission() const {
+    const std::size_t index = static_cast<std::size_t>(currentStage_ - 1);
+    return stageMissions_.at(index);
 }
 
 Snake Game::createInitialSnake() const {
@@ -279,7 +289,28 @@ void Game::refreshExpiredItems(const Snake& snake) {
     shield_.refreshIfExpired(map_, occupied, rng_);
 }
 
+void Game::updateDynamicWall(const Snake& snake) {
+    // Gate로 바뀐 Dynamic Wall은 Gate가 복원될 때까지 이동시키지 않는다.
+    if (gate_.isActive() && gate_.isGatePosition(dynamicWall_.position())) {
+        return;
+    }
+    if (dynamicWall_.update(map_, occupiedPositions(snake), rng_)) {
+        status_ = "Dynamic wall moved";
+    }
+}
+
 void Game::handleGate(Snake& snake) {
+    if (gateTraversalActive_) {
+        const bool stillPassing = std::any_of(snake.body().begin(), snake.body().end(),
+            [this](const Position& part) { return gate_.isGatePosition(part); });
+        if (!stillPassing) {
+            gate_.clear(map_);
+            gateLastClearedAt_ = std::chrono::steady_clock::now();
+            gateTraversalActive_ = false;
+        }
+        return;
+    }
+
     if (!gate_.isActive()) {
         // 일정 시간이 지나면 Gate 쌍을 새로 생성한다.
         const auto now = std::chrono::steady_clock::now();
@@ -302,28 +333,30 @@ void Game::handleGate(Snake& snake) {
         : exitDir == Direction::Left ? Direction::Right
         : Direction::Left);
 
-    // Gate를 먼저 제거한 뒤 Snake를 출구로 순간이동시킨다.
-    gate_.clear(map_);
-    gateLastClearedAt_ = std::chrono::steady_clock::now();
-
-    snake.teleportHead(exitPos, exitDir);
-    gateUseCount_++;
-    status_ = "Used gate (G:" + std::to_string(gateUseCount_) + ")";
-
     // 출구에서 자기 몸과 충돌하면 게임 오버로 처리한다.
     const auto& body = snake.body();
     const Position exitPosVal = exitPos;
     const bool selfCollision = std::any_of(body.begin() + 1, body.end(),
         [exitPosVal](const Position& p) { return p == exitPosVal; });
     if (selfCollision) {
-        if (hasShield_ && recoverFromGateBodyCollision(snake, exitGate, map_)) {
+        Position safePosition{};
+        Direction safeDirection = exitDir;
+        if (hasShield_ && findSafeGateExit(snake, exitGate, map_, safePosition, safeDirection)) {
             hasShield_ = false;
+            snake.teleportHead(safePosition, safeDirection);
             status_ = "Shield blocked body";
         } else {
             gameOver_ = true;
             status_ = "Hit body (via gate)";
+            return;
         }
+    } else {
+        snake.teleportHead(exitPos, exitDir);
     }
+
+    gateTraversalActive_ = true;
+    gateUseCount_++;
+    status_ = "Used gate (G:" + std::to_string(gateUseCount_) + ")";
 }
 
 std::vector<Position> Game::occupiedPositions(const Snake& snake) const {

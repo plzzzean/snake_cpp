@@ -8,10 +8,6 @@
 #include <random>
 #include <sstream>
 
-namespace {
-constexpr int MinPlayableMapSize = 21;
-}
-
 bool Map::loadFromFile(const std::string& path) {
     // 맵 파일은 공백으로 구분된 숫자를 한 줄씩 읽어 CellType 그리드로 변환한다.
     std::ifstream input(path);
@@ -63,12 +59,12 @@ bool Map::loadFromFile(const std::string& path) {
 
 void Map::loadFallbackMap(int size) {
     // 요청 크기가 너무 작아도 최소 플레이 가능 크기 이상으로 보정한다.
-    const int mapSize = std::max(MinPlayableMapSize, size);
+    const std::size_t mapSize = static_cast<std::size_t>(std::max(MinPlayableMapSize, size));
     grid_.assign(mapSize, std::vector<CellType>(mapSize, CellType::Empty));
 
     // 가장자리는 일반 벽으로 채워 Snake가 맵 밖으로 나가지 못하게 한다.
-    for (int r = 0; r < mapSize; ++r) {
-        for (int c = 0; c < mapSize; ++c) {
+    for (std::size_t r = 0; r < mapSize; ++r) {
+        for (std::size_t c = 0; c < mapSize; ++c) {
             if (r == 0 || r == mapSize - 1 || c == 0 || c == mapSize - 1) {
                 grid_[r][c] = CellType::Wall;
             }
@@ -88,12 +84,13 @@ CellType Map::at(int row, int col) const {
     if (!contains(row, col)) {
         return CellType::Wall;
     }
-    return grid_[row][col];
+    return grid_[static_cast<std::size_t>(row)][static_cast<std::size_t>(col)];
 }
 
 bool Map::isBlocked(int row, int col) const {
     const CellType cell = at(row, col);
-    return cell == CellType::Wall || cell == CellType::ImmuneWall;
+    return cell == CellType::Wall || cell == CellType::ImmuneWall
+        || cell == CellType::DynamicWall;
 }
 
 bool Map::isEmpty(int row, int col) const {
@@ -108,7 +105,7 @@ bool Map::setCell(int row, int col, CellType cell) {
     if (!contains(row, col)) {
         return false;
     }
-    grid_[row][col] = cell;
+    grid_[static_cast<std::size_t>(row)][static_cast<std::size_t>(col)] = cell;
     return true;
 }
 
@@ -197,5 +194,5 @@ bool Map::validateGrid(const std::vector<std::vector<CellType>>& grid) {
 
 bool Map::isKnownCellValue(int value) {
     return value >= static_cast<int>(CellType::Empty)
-        && value <= static_cast<int>(CellType::ShieldItem);
+        && value <= static_cast<int>(CellType::DynamicWall);
 }
